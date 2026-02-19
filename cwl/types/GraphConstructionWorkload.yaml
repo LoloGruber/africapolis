@@ -1,0 +1,7 @@
+name: GraphConstructionWorkload
+type: record
+fields:
+  - name: primaryInput
+    type: Shapefile.yaml#Shapefile
+  - name: additionalInput
+    type: Shapefile.yaml#Shapefile[]?

@@ -1,0 +1,7 @@
+name: ClusterWorkload
+type: record
+fields:
+  - name: graphBinary
+    type: File
+  - name: shpFiles
+    type: Shapefile.yaml#Shapefile[]

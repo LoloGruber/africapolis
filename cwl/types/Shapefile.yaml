@@ -1,0 +1,14 @@
+name: Shapefile
+type: record
+fields:
+  - name: file
+    type: File
+    secondaryFiles:
+      - ^.shx
+      - ^.dbf
+      - ^.prj
+      - ^.cpg?
+      - ^.qpj?
+    doc: "The main Shapefile (.shp)"
+inputBinding: 
+  valueFrom: $(self.file)

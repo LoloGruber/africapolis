@@ -1,0 +1,8 @@
+name: ComponentsOutput
+type: record
+fields:
+  - name: graphBinary
+    type: File
+  - name: workloadJson
+    type: File
+    loadContents: true
