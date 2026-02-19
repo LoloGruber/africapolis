@@ -1,9 +1,9 @@
 FROM logru/fishnet-deps:latest AS build
-COPY . /fishnet
-WORKDIR /fishnet
-RUN mkdir -p /fishnet/build
-WORKDIR /fishnet/build
-RUN cmake -DCMAKE_BUILD_TYPE=Release -DFISHNET_TEST=OFF -DFISHNET_TEST_LIB=OFF -DFISHNET_APPS=ON .. 
+COPY . /africapolis
+WORKDIR /africapolis
+RUN mkdir -p /africapolis/build
+WORKDIR /africapolis/build
+RUN cmake -DCMAKE_BUILD_TYPE=Release -DFISHNET_TEST=OFF -DFISHNET_TEST_LIB=OFF -DFISHNET_APPS=ON -DFISHNET_EXAMPLES=OFF .. 
 RUN cmake --build . --config Release -j 8
 RUN cmake --install .
 

@@ -1,6 +1,6 @@
 #!/bin/bash
-VERSION=1.1.0
-docker build -t logru/fishnet-deps:$VERSION -t logru/fishnet-deps:latest -f Dockerfile.deps .
+VERSION=1.0.0
+docker build -t logru/africapolis:$VERSION -t logru/africapolis:latest .
 docker login 
-docker push logru/fishnet-deps:$VERSION 
-docker push logru/fishnet-deps:latest
+docker push logru/africapolis:$VERSION 
+docker push logru/africapolis:latest
