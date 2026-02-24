@@ -3,9 +3,9 @@
         "mode": "DBSCAN",
         "args": {
             "distance-threshold": 200.0,
-            "min-cluster-size": 3
+            "min-cluster-size": 5
         }
     },
-    "buffer-distance-meters": 1000.0,
+    "buffer-distance-meters": 200.0,
     "max-neighbors-per-node": 5
 }
