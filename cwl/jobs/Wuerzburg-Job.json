@@ -2,12 +2,12 @@
     "gisInput":{
         "file":{
             "class": "File",
-            "path": "/home/lolo/Projects/fishnet/data/samples/Wuerzburg_DE.tiff"
+            "path": "/home/lolo/Projects/africapolis/data/input/Wuerzburg_DE.tiff"
         }
     },
     "config":{
         "class":"File",
-        "path": "/home/lolo/Projects/fishnet/cwl/africapolis/africapolis-config.json"
+        "path": "/home/lolo/Projects/africapolis/data/config.json"
     },
     "partitions": 3
 }
