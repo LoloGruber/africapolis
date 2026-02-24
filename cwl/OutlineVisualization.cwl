@@ -3,7 +3,7 @@ cwlVersion: v1.2
 baseCommand: [AfricapolisPolygonOutline]
 hints:
   DockerRequirement:
-    dockerPull: logru/africapolis:1.0.0
+    dockerPull: logru/africapolis:1.1.0
 requirements:
   - class: InlineJavascriptRequirement
   - class: SchemaDefRequirement
@@ -16,6 +16,12 @@ inputs:
       position: 1
       prefix: -i
       valueFrom: $(self.file)
+  alpha:
+    type: float
+    default: 0.05
+    inputBinding:
+      position: 2
+      prefix: --alpha
 outputs:
   outputShapefile:
     type: types/Shapefile.yaml#Shapefile
