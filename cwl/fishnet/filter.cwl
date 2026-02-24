@@ -3,7 +3,7 @@ class: CommandLineTool
 baseCommand: [FishnetShapefilePreprocessor]
 hints:
   DockerRequirement:
-    dockerPull: logru/africapolis:1.0.0
+    dockerPull: logru/fishnet-apps:1.1.0
 requirements:
   - class: SchemaDefRequirement
     types:
