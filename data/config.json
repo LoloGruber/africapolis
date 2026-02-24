@@ -1,9 +1,4 @@
 {
-    "binary-filters": [
-        {
-            "name": "InsidePolygonFilter"
-        }
-    ],
     "clustering": {
         "mode": "DBSCAN",
         "args": {
@@ -12,16 +7,5 @@
         }
     },
     "buffer-distance-meters": 1000.0,
-    "max-neighbors-per-node": 5,
-    "memgraph-host": "localhost",
-    "memgraph-port": 7687,
-    "merge-workers": 2,
-    "neighbouring-predicates": [],
-    "splits": 0,
-    "unary-filters": [
-        {
-            "name": "ApproxAreaFilter",
-            "requiredArea": 500.0
-        }
-    ]
+    "max-neighbors-per-node": 5
 }
