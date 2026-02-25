@@ -2,12 +2,12 @@
 
 BUILD_DIRECTORY="build-release"
 INSTALL_PREFIX=$HOME/.local
-CACHE_BUILD=0
+CACHE_BUILD=1
 # Parse arguments
 for arg in "$@"; do
   case $arg in
-    --cache)
-      CACHE_BUILD=1
+    --no-cache)
+      CACHE_BUILD=0
       shift # Remove argument from the list
       ;;
     *)
