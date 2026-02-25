@@ -3,22 +3,26 @@ class: Workflow
 requirements:
 - class: SchemaDefRequirement
   types: 
-    - $import: ../types/Shapefile.yaml
     - $import: ../types/ComponentsOutput.yaml
     - $import: ../types/ClusterWorkload.yaml
 inputs:
   config:
     type: File
+    # format: JSON
     doc: "Path to configuration file for africapolis clustering step. Contains database credentials"
   workload: 
     type: ../types/ComponentsOutput.yaml#ComponentsOutput
     doc: "Object containing the json workload definition and the graph file"
   files: 
-    type: ../types/Shapefile.yaml#Shapefile[]
+    type: File[]
+    secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
+    # format: SHP
     doc: "List of shapefiles to be used for assigning the workload for the clustering"
 outputs:
   clusteredOutput:
-    type: ../types/Shapefile.yaml#Shapefile
+    type: File
+    secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
+    # format: SHP
     outputSource: clustering/clusteredOutput
 steps:
     prepare_cluster_workload:
@@ -28,7 +32,9 @@ steps:
                 workload:
                     type: ../types/ComponentsOutput.yaml#ComponentsOutput
                 files: 
-                    type: ../types/Shapefile.yaml#Shapefile[]
+                    type: File[]
+                    secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
+                    # format: SHP
                     doc: "List of shapefiles to be used for assigning the workload for the clustering step"
             outputs:
                 clusterWorkload:
@@ -39,7 +45,7 @@ steps:
                     let workloadJson = JSON.parse(inputs.workload.workloadJson.contents);
                     let fileNames = [...new Set(workloadJson.files.map(file => file.split("/").pop()))];
                     let files = fileNames.map(fileName => {
-                        let fileObject = inputs.files.find(f => f.file.basename == fileName);
+                        let fileObject = inputs.files.find(f => f.basename == fileName);
                         return fileObject;
                         });
                     let result = {

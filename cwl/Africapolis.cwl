@@ -7,19 +7,18 @@ requirements:
 - class: SubworkflowFeatureRequirement
 - class: SchemaDefRequirement
   types: 
-    - $import: types/Shapefile.yaml
-    - $import: types/GeoTIFF.yaml
     - $import: types/ClusterWorkload.yaml
     - $import: types/ComponentsOutput.yaml
     - $import: types/GraphConstructionWorkload.yaml
 inputs:
-  gisInput:
-    type: 
-      # - ../GIS.cwl#Shapefile
-      - types/GeoTIFF.yaml#GeoTIFF
-    doc: "Input vector file to Africapolis workflow"
+  shapefile:
+    type: File
+    secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
+    # format: SHP
+    doc: "Input file to Africapolis workflow"
   config:
     type: File
+    # format: JSON
     doc: "Configuration file for Africapolis workflow"
   partitions:
     type: int
@@ -27,34 +26,36 @@ inputs:
     doc: "Number of partitions created on the input for parallel computation"
 outputs:
   concave_hull:
-    type: types/Shapefile.yaml#Shapefile
+    type: File
+    secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
+    # format: SHP
     outputSource: visualize/outputShapefile
   multi_polygons:
-    type: types/Shapefile.yaml#Shapefile
+    type: File
+    secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
+    # format: SHP
     outputSource: merge/mergedOutput
 steps:
   split:
     run: fishnet/split.cwl
     in:
-      gisFile: gisInput
-      # Pass the relative path "fishnet", which will resolve to the directory created by the InitialWorkDirRequirement.
+      shapefile: shapefile
       splits: partitions
     out: [split_shapefiles]
   filter:
     run: fishnet/filter.cwl
     in:
-      gisFile:
-        source: split/split_shapefiles
+      shapefile: split/split_shapefiles
       config: config
-    scatter: [gisFile]
+    scatter: [shapefile]
     out: [filtered_shapefile]
   graph_generation:
     run: graph_generation/GraphGeneration.cwl
     in: 
       shapefiles: filter/filtered_shapefile
       filenamePrefix: 
-        source: gisInput
-        valueFrom: $(self.file.nameroot)
+        source: shapefile
+        valueFrom: $(self.nameroot)
       config: config
     out: [graphBinaries]
   graph_components:
@@ -75,16 +76,15 @@ steps:
   merge:
     run: fishnet/merge.cwl
     in:
-      gisInput: gisInput
       shpFiles: clustering/clusteredOutput
       outputPath:
-        source: gisInput
-        valueFrom: $("./"+self.file.nameroot+"_Africapolis")
+        source: shapefile
+        valueFrom: $("./"+self.nameroot+"_Africapolis")
     out: [mergedOutput]
   visualize:
     run: OutlineVisualization.cwl
     in:
-      gisFile: merge/mergedOutput
+      shapefile: merge/mergedOutput
     out: [outputShapefile]
 
 

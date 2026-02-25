@@ -2,6 +2,10 @@ name: GraphConstructionWorkload
 type: record
 fields:
   - name: primaryInput
-    type: Shapefile.yaml#Shapefile
+    type: File
+    secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
+    # format: SHP
   - name: additionalInput
-    type: Shapefile.yaml#Shapefile[]?
+    type: File[]
+    secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
+    # format: SHP

@@ -5,17 +5,12 @@ hints:
   DockerRequirement:
     dockerPull: logru/fishnet-apps:1.1.0
 requirements:
-  - class: InlineJavascriptRequirement
-  - class: SchemaDefRequirement
-    types: 
-      - $import: ../types/Shapefile.yaml
+  InlineJavascriptRequirement: {}
 inputs:
     shpFiles:
-        type: 
-          type: array 
-          items: ../types/Shapefile.yaml#Shapefile
-          inputBinding: 
-            valueFrom: $(self.file)
+        type: File[]
+        secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
+        # format: SHP
         inputBinding:
             prefix: -i
         doc: "List of input shapefiles, with their required secondary files (.dbf, .shx, .prj)"
@@ -32,11 +27,11 @@ outputs:
     errorOut:
         type: stderr
     mergedOutput:
-        type: ../types/Shapefile.yaml#Shapefile
+        type: File
+        secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
+        # format: SHP
         outputBinding:
-            glob: "$(inputs.outputPath).*"
-            outputEval:
-                $include: ../utils/groupToShapefile.js
+            glob: "$(inputs.outputPath).shp"
         doc: "Merged output file"
 stdout: MERGE_stdout.log
 stderr: MERGE_stderr.log

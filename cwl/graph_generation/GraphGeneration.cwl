@@ -3,23 +3,26 @@ class: Workflow
 requirements:
   - class: SchemaDefRequirement
     types: 
-      - $import: ../types/Shapefile.yaml
       - $import: ../types/GraphConstructionWorkload.yaml
   - class: StepInputExpressionRequirement
   - class: ScatterFeatureRequirement
   - class: InlineJavascriptRequirement
 inputs:
   shapefiles:
-    type: ../types/Shapefile.yaml#Shapefile[]
+    type: File[]
+    secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
+    # format: SHP
     doc: "List of shapefiles to be used for graph construction. Each polygon must be associated with a unique FISHNET ID."
   filenamePrefix:
     type: string?
     doc: "Prefix used to identify the shapefiles. The prefix is used to extract the grid coordinates from the filenames."
   config:
     type: File
+    # format: JSON
 outputs: 
   graphBinaries:
     type: File[]
+    # format: BIN
     outputSource: generate_graph/graphBinary
 steps:
   prepare_workload:

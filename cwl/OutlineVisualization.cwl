@@ -5,17 +5,14 @@ hints:
   DockerRequirement:
     dockerPull: logru/africapolis:1.1.0
 requirements:
-  - class: InlineJavascriptRequirement
-  - class: SchemaDefRequirement
-    types:
-      - $import: types/Shapefile.yaml
+  InlineJavascriptRequirement: {}
 inputs:
-  gisFile:
-    type: types/Shapefile.yaml#Shapefile
+  shapefile:
+    type: File
+    secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
+    # format: SHP
     inputBinding:
-      position: 1
       prefix: -i
-      valueFrom: $(self.file)
   alpha:
     type: float
     default: 0.05
@@ -24,15 +21,15 @@ inputs:
       prefix: --alpha
 outputs:
   outputShapefile:
-    type: types/Shapefile.yaml#Shapefile
+    type: File
+    secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
+    # format: SHP
     outputBinding:
-      glob: "$(inputs.gisFile.file.nameroot)*"
-      outputEval: 
-        $include: utils/groupToShapefile.js
+      glob: "$(inputs.shapefile.nameroot)*.shp"
     doc: "Output shapefile with polygon outlines"
   standardOut:
     type: stdout
   errorOut:
     type: stderr
-stdout: OUTLINE_$(inputs.gisFile.file.nameroot)_stdout.log
-stderr: OUTLINE_$(inputs.gisFile.file.nameroot)_stderr.log
+stdout: OUTLINE_$(inputs.shapefile.nameroot)_stdout.log
+stderr: OUTLINE_$(inputs.shapefile.nameroot)_stderr.log

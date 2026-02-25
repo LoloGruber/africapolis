@@ -3,6 +3,8 @@ type: record
 fields:
   - name: graphBinary
     type: File
+    # format: BIN
   - name: workloadJson
     type: File
+    # format: JSON
     loadContents: true

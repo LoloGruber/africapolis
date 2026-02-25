@@ -5,34 +5,30 @@ hints:
   DockerRequirement:
     dockerPull: logru/africapolis:1.1.0
 requirements:
-  - class: InlineJavascriptRequirement
-  - class: SchemaDefRequirement
-    types:
-      - $import: ../types/Shapefile.yaml
+  InlineJavascriptRequirement: {}
 inputs:
     shpFiles:
-        type: 
-          type: array 
-          items: ../types/Shapefile.yaml#Shapefile
-          inputBinding: 
-            valueFrom: $(self.file)
+        type: File[]
+        secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
+        # format: SHP
         inputBinding:
             prefix: -i
         doc: "List of input shapefiles, with their required secondary files (.dbf, .shx, .prj)"
     config:
         type: File
+        # format: JSON
         inputBinding:
             prefix: -c
         doc: "Path to configuration for contraction task"
     graphBinary:
         type: File
+        # format: BIN
         inputBinding:
             prefix: -g
         doc: "Binary file containing the graph structure of the components to be clustered"
     outputStem:
         type: string
         inputBinding:
-            position: 2
             prefix: --outputStem 
         doc: "Output filename storing the merged polygons"     
 outputs:
@@ -41,11 +37,11 @@ outputs:
     errorOut:
         type: stderr
     clusteredOutput:
-        type: ../types/Shapefile.yaml#Shapefile
+        type: File
+        secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
+        # format: SHP
         outputBinding:
-            glob: "$(inputs.outputStem).*"
-            outputEval:
-                $include: ../utils/groupToShapefile.js
-        doc: "Merged output file"
+            glob: "$(inputs.outputStem).shp"
+        doc: "Clustering output shapefile"
 stdout: CLUSTER_$(inputs.graphBinary.basename)_stdout.log
 stderr: CLUSTER_$(inputs.graphBinary.basename)_stderr.log

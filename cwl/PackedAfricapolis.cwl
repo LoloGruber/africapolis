@@ -19,85 +19,6 @@
                     "class": "SchemaDefRequirement",
                     "types": [
                         {
-                            "name": "#Shapefile.yaml/Shapefile",
-                            "type": "record",
-                            "fields": [
-                                {
-                                    "name": "#Shapefile.yaml/Shapefile/file",
-                                    "type": "File",
-                                    "secondaryFiles": [
-                                        {
-                                            "pattern": "^.shx",
-                                            "required": null
-                                        },
-                                        {
-                                            "pattern": "^.dbf",
-                                            "required": null
-                                        },
-                                        {
-                                            "pattern": "^.prj",
-                                            "required": null
-                                        },
-                                        {
-                                            "pattern": "^.cpg",
-                                            "required": false
-                                        },
-                                        {
-                                            "pattern": "^.qpj",
-                                            "required": false
-                                        }
-                                    ],
-                                    "doc": "The main Shapefile (.shp)"
-                                }
-                            ],
-                            "inputBinding": {
-                                "valueFrom": "$(self.file)"
-                            }
-                        },
-                        {
-                            "name": "#GeoTIFF.yaml/GeoTIFF",
-                            "type": "record",
-                            "fields": [
-                                {
-                                    "name": "#GeoTIFF.yaml/GeoTIFF/file",
-                                    "type": "File"
-                                }
-                            ]
-                        },
-                        {
-                            "name": "#GeoTIFF.yaml/Shapefile",
-                            "type": "record",
-                            "fields": [
-                                {
-                                    "name": "#GeoTIFF.yaml/Shapefile/file",
-                                    "type": "File",
-                                    "secondaryFiles": [
-                                        {
-                                            "pattern": "^.shx",
-                                            "required": null
-                                        },
-                                        {
-                                            "pattern": "^.dbf",
-                                            "required": null
-                                        },
-                                        {
-                                            "pattern": "^.prj",
-                                            "required": null
-                                        },
-                                        {
-                                            "pattern": "^.cpg",
-                                            "required": false
-                                        },
-                                        {
-                                            "pattern": "^.qpj",
-                                            "required": false
-                                        }
-                                    ],
-                                    "doc": "The main Shapefile (.shp)"
-                                }
-                            ]
-                        },
-                        {
                             "name": "#ClusterWorkload.yaml/ClusterWorkload",
                             "type": "record",
                             "fields": [
@@ -109,8 +30,30 @@
                                     "name": "#ClusterWorkload.yaml/ClusterWorkload/shpFiles",
                                     "type": {
                                         "type": "array",
-                                        "items": "#Shapefile.yaml/Shapefile"
-                                    }
+                                        "items": "File"
+                                    },
+                                    "secondaryFiles": [
+                                        {
+                                            "pattern": "^.shx",
+                                            "required": null
+                                        },
+                                        {
+                                            "pattern": "^.dbf",
+                                            "required": null
+                                        },
+                                        {
+                                            "pattern": "^.prj",
+                                            "required": null
+                                        },
+                                        {
+                                            "pattern": "^.cpg",
+                                            "required": false
+                                        },
+                                        {
+                                            "pattern": "^.qpj",
+                                            "required": false
+                                        }
+                                    ]
                                 }
                             ]
                         },
@@ -135,15 +78,56 @@
                             "fields": [
                                 {
                                     "name": "#GraphConstructionWorkload.yaml/GraphConstructionWorkload/primaryInput",
-                                    "type": "#Shapefile.yaml/Shapefile"
+                                    "type": "File",
+                                    "secondaryFiles": [
+                                        {
+                                            "pattern": "^.shx",
+                                            "required": null
+                                        },
+                                        {
+                                            "pattern": "^.dbf",
+                                            "required": null
+                                        },
+                                        {
+                                            "pattern": "^.prj",
+                                            "required": null
+                                        },
+                                        {
+                                            "pattern": "^.cpg",
+                                            "required": false
+                                        },
+                                        {
+                                            "pattern": "^.qpj",
+                                            "required": false
+                                        }
+                                    ]
                                 },
                                 {
                                     "name": "#GraphConstructionWorkload.yaml/GraphConstructionWorkload/additionalInput",
-                                    "type": [
-                                        "null",
+                                    "type": {
+                                        "type": "array",
+                                        "items": "File"
+                                    },
+                                    "secondaryFiles": [
                                         {
-                                            "type": "array",
-                                            "items": "#Shapefile.yaml/Shapefile"
+                                            "pattern": "^.shx",
+                                            "required": null
+                                        },
+                                        {
+                                            "pattern": "^.dbf",
+                                            "required": null
+                                        },
+                                        {
+                                            "pattern": "^.prj",
+                                            "required": null
+                                        },
+                                        {
+                                            "pattern": "^.cpg",
+                                            "required": false
+                                        },
+                                        {
+                                            "pattern": "^.qpj",
+                                            "required": false
                                         }
                                     ]
                                 }
@@ -159,17 +143,37 @@
                     "id": "#main/config"
                 },
                 {
-                    "type": [
-                        "#GeoTIFF.yaml/GeoTIFF"
-                    ],
-                    "doc": "Input vector file to Africapolis workflow",
-                    "id": "#main/gisInput"
-                },
-                {
                     "type": "int",
                     "default": 1,
                     "doc": "Number of partitions created on the input for parallel computation",
                     "id": "#main/partitions"
+                },
+                {
+                    "type": "File",
+                    "secondaryFiles": [
+                        {
+                            "pattern": "^.shx",
+                            "required": null
+                        },
+                        {
+                            "pattern": "^.dbf",
+                            "required": null
+                        },
+                        {
+                            "pattern": "^.prj",
+                            "required": null
+                        },
+                        {
+                            "pattern": "^.cpg",
+                            "required": false
+                        },
+                        {
+                            "pattern": "^.qpj",
+                            "required": false
+                        }
+                    ],
+                    "doc": "Input file to Africapolis workflow",
+                    "id": "#main/shapefile"
                 }
             ],
             "steps": [
@@ -207,11 +211,11 @@
                         },
                         {
                             "source": "#main/split/split_shapefiles",
-                            "id": "#main/filter/gisFile"
+                            "id": "#main/filter/shapefile"
                         }
                     ],
                     "scatter": [
-                        "#main/filter/gisFile"
+                        "#main/filter/shapefile"
                     ],
                     "out": [
                         "#main/filter/filtered_shapefile"
@@ -243,8 +247,8 @@
                             "id": "#main/graph_generation/config"
                         },
                         {
-                            "source": "#main/gisInput",
-                            "valueFrom": "$(self.file.nameroot)",
+                            "source": "#main/shapefile",
+                            "valueFrom": "$(self.nameroot)",
                             "id": "#main/graph_generation/filenamePrefix"
                         },
                         {
@@ -261,12 +265,8 @@
                     "run": "#merge.cwl",
                     "in": [
                         {
-                            "source": "#main/gisInput",
-                            "id": "#main/merge/gisInput"
-                        },
-                        {
-                            "source": "#main/gisInput",
-                            "valueFrom": "$(\"./\"+self.file.nameroot+\"_Africapolis\")",
+                            "source": "#main/shapefile",
+                            "valueFrom": "$(\"./\"+self.nameroot+\"_Africapolis\")",
                             "id": "#main/merge/outputPath"
                         },
                         {
@@ -283,8 +283,8 @@
                     "run": "#split.cwl",
                     "in": [
                         {
-                            "source": "#main/gisInput",
-                            "id": "#main/split/gisFile"
+                            "source": "#main/shapefile",
+                            "id": "#main/split/shapefile"
                         },
                         {
                             "source": "#main/partitions",
@@ -301,7 +301,7 @@
                     "in": [
                         {
                             "source": "#main/merge/mergedOutput",
-                            "id": "#main/visualize/gisFile"
+                            "id": "#main/visualize/shapefile"
                         }
                     ],
                     "out": [
@@ -313,12 +313,56 @@
             "id": "#main",
             "outputs": [
                 {
-                    "type": "#Shapefile.yaml/Shapefile",
+                    "type": "File",
+                    "secondaryFiles": [
+                        {
+                            "pattern": "^.shx",
+                            "required": null
+                        },
+                        {
+                            "pattern": "^.dbf",
+                            "required": null
+                        },
+                        {
+                            "pattern": "^.prj",
+                            "required": null
+                        },
+                        {
+                            "pattern": "^.cpg",
+                            "required": false
+                        },
+                        {
+                            "pattern": "^.qpj",
+                            "required": false
+                        }
+                    ],
                     "outputSource": "#main/visualize/outputShapefile",
                     "id": "#main/concave_hull"
                 },
                 {
-                    "type": "#Shapefile.yaml/Shapefile",
+                    "type": "File",
+                    "secondaryFiles": [
+                        {
+                            "pattern": "^.shx",
+                            "required": null
+                        },
+                        {
+                            "pattern": "^.dbf",
+                            "required": null
+                        },
+                        {
+                            "pattern": "^.prj",
+                            "required": null
+                        },
+                        {
+                            "pattern": "^.cpg",
+                            "required": false
+                        },
+                        {
+                            "pattern": "^.qpj",
+                            "required": false
+                        }
+                    ],
                     "outputSource": "#main/merge/mergedOutput",
                     "id": "#main/multi_polygons"
                 }
@@ -331,32 +375,53 @@
             ],
             "hints": [
                 {
-                    "dockerPull": "logru/africapolis:1.0.0",
+                    "dockerPull": "logru/africapolis:1.1.0",
                     "class": "DockerRequirement"
                 }
             ],
             "requirements": [
                 {
                     "class": "InlineJavascriptRequirement"
-                },
-                {
-                    "class": "SchemaDefRequirement",
-                    "types": [
-                        {
-                            "$import": "#Shapefile.yaml/Shapefile"
-                        }
-                    ]
                 }
             ],
             "inputs": [
                 {
-                    "type": "#Shapefile.yaml/Shapefile",
+                    "type": "float",
+                    "default": 0.05,
                     "inputBinding": {
-                        "position": 1,
-                        "prefix": "-i",
-                        "valueFrom": "$(self.file)"
+                        "position": 2,
+                        "prefix": "--alpha"
                     },
-                    "id": "#OutlineVisualization.cwl/gisFile"
+                    "id": "#OutlineVisualization.cwl/alpha"
+                },
+                {
+                    "type": "File",
+                    "secondaryFiles": [
+                        {
+                            "pattern": "^.shx",
+                            "required": null
+                        },
+                        {
+                            "pattern": "^.dbf",
+                            "required": null
+                        },
+                        {
+                            "pattern": "^.prj",
+                            "required": null
+                        },
+                        {
+                            "pattern": "^.cpg",
+                            "required": false
+                        },
+                        {
+                            "pattern": "^.qpj",
+                            "required": false
+                        }
+                    ],
+                    "inputBinding": {
+                        "prefix": "-i"
+                    },
+                    "id": "#OutlineVisualization.cwl/shapefile"
                 }
             ],
             "outputs": [
@@ -364,14 +429,35 @@
                     "type": "File",
                     "id": "#OutlineVisualization.cwl/errorOut",
                     "outputBinding": {
-                        "glob": "OUTLINE_$(inputs.gisFile.file.nameroot)_stderr.log"
+                        "glob": "OUTLINE_$(inputs.shapefile.nameroot)_stderr.log"
                     }
                 },
                 {
-                    "type": "#Shapefile.yaml/Shapefile",
+                    "type": "File",
+                    "secondaryFiles": [
+                        {
+                            "pattern": "^.shx",
+                            "required": null
+                        },
+                        {
+                            "pattern": "^.dbf",
+                            "required": null
+                        },
+                        {
+                            "pattern": "^.prj",
+                            "required": null
+                        },
+                        {
+                            "pattern": "^.cpg",
+                            "required": false
+                        },
+                        {
+                            "pattern": "^.qpj",
+                            "required": false
+                        }
+                    ],
                     "outputBinding": {
-                        "glob": "$(inputs.gisFile.file.nameroot)*",
-                        "outputEval": "${\nfunction groupShapefilesByNameroot(files) {\n    var grouped = {};\n    files.forEach(function(f) {\n      var nameroot = f.nameroot || f.basename.replace(/\\.[^/.]+$/, \"\");\n      if (!grouped[nameroot]) {\n        grouped[nameroot] = {};\n      }\n      if (f.basename.endsWith(\".shp\")) grouped[nameroot].shp = f;\n      if (f.basename.endsWith(\".shx\")) grouped[nameroot].shx = f;\n      if (f.basename.endsWith(\".dbf\")) grouped[nameroot].dbf = f;\n      if (f.basename.endsWith(\".prj\")) grouped[nameroot].prj = f;\n      if (f.basename.endsWith(\".cpg\")) grouped[nameroot].cpg = f;\n      if (f.basename.endsWith(\".qpj\")) grouped[nameroot].qpj = f;\n    });\n    return Object.values(grouped).filter(f => f && f.shp);;\n}\n\nfunction groupToShapefileObject(group) {\n    if (!group.shp) return null;\n    return {\n        \"file\":{\n            class: \"File\",\n            path: group.shp.path,\n            basename: group.shp.basename,\n            nameroot: group.shp.nameroot,\n            nameext: group.shp.nameext,\n            secondaryFiles: [group.shx, group.dbf, group.prj,group.cpg,group.qpj].filter(Boolean)\n        }\n    };\n}\n\nvar shapefiles = groupShapefilesByNameroot(self);\nif(shapefiles.length == 1)\n    return groupToShapefileObject(shapefiles.at(0));\nreturn shapefiles.map(groupToShapefileObject).filter(Boolean);\n}\n  "
+                        "glob": "$(inputs.shapefile.nameroot)*.shp"
                     },
                     "doc": "Output shapefile with polygon outlines",
                     "id": "#OutlineVisualization.cwl/outputShapefile"
@@ -380,12 +466,12 @@
                     "type": "File",
                     "id": "#OutlineVisualization.cwl/standardOut",
                     "outputBinding": {
-                        "glob": "OUTLINE_$(inputs.gisFile.file.nameroot)_stdout.log"
+                        "glob": "OUTLINE_$(inputs.shapefile.nameroot)_stdout.log"
                     }
                 }
             ],
-            "stdout": "OUTLINE_$(inputs.gisFile.file.nameroot)_stdout.log",
-            "stderr": "OUTLINE_$(inputs.gisFile.file.nameroot)_stderr.log",
+            "stdout": "OUTLINE_$(inputs.shapefile.nameroot)_stdout.log",
+            "stderr": "OUTLINE_$(inputs.shapefile.nameroot)_stderr.log",
             "id": "#OutlineVisualization.cwl"
         },
         {
@@ -395,19 +481,11 @@
             ],
             "hints": [
                 {
-                    "dockerPull": "logru/africapolis:1.0.0",
+                    "dockerPull": "logru/fishnet-apps:1.1.0",
                     "class": "DockerRequirement"
                 }
             ],
             "requirements": [
-                {
-                    "class": "SchemaDefRequirement",
-                    "types": [
-                        {
-                            "$import": "#Shapefile.yaml/Shapefile"
-                        }
-                    ]
-                },
                 {
                     "class": "InlineJavascriptRequirement"
                 }
@@ -417,21 +495,38 @@
                     "type": "File",
                     "doc": "Configuration file for filter process",
                     "inputBinding": {
-                        "prefix": "--config",
-                        "position": 2
+                        "prefix": "--config"
                     },
                     "id": "#filter.cwl/config"
                 },
                 {
-                    "type": [
-                        "#Shapefile.yaml/Shapefile"
+                    "type": "File",
+                    "secondaryFiles": [
+                        {
+                            "pattern": "^.shx",
+                            "required": null
+                        },
+                        {
+                            "pattern": "^.dbf",
+                            "required": null
+                        },
+                        {
+                            "pattern": "^.prj",
+                            "required": null
+                        },
+                        {
+                            "pattern": "^.cpg",
+                            "required": false
+                        },
+                        {
+                            "pattern": "^.qpj",
+                            "required": false
+                        }
                     ],
                     "inputBinding": {
-                        "position": 1,
-                        "prefix": "--input",
-                        "valueFrom": "$(self.file)"
+                        "prefix": "--input"
                     },
-                    "id": "#filter.cwl/gisFile"
+                    "id": "#filter.cwl/shapefile"
                 }
             ],
             "outputs": [
@@ -439,14 +534,35 @@
                     "type": "File",
                     "id": "#filter.cwl/errorOut",
                     "outputBinding": {
-                        "glob": "FILTER_$(inputs.gisFile.file.nameroot)_stderr.log"
+                        "glob": "FILTER_$(inputs.shapefile.nameroot)_stderr.log"
                     }
                 },
                 {
-                    "type": "#Shapefile.yaml/Shapefile",
+                    "type": "File",
+                    "secondaryFiles": [
+                        {
+                            "pattern": "^.shx",
+                            "required": null
+                        },
+                        {
+                            "pattern": "^.dbf",
+                            "required": null
+                        },
+                        {
+                            "pattern": "^.prj",
+                            "required": null
+                        },
+                        {
+                            "pattern": "^.cpg",
+                            "required": false
+                        },
+                        {
+                            "pattern": "^.qpj",
+                            "required": false
+                        }
+                    ],
                     "outputBinding": {
-                        "glob": "*_filtered.*",
-                        "outputEval": "${\nfunction groupShapefilesByNameroot(files) {\n    var grouped = {};\n    files.forEach(function(f) {\n      var nameroot = f.nameroot || f.basename.replace(/\\.[^/.]+$/, \"\");\n      if (!grouped[nameroot]) {\n        grouped[nameroot] = {};\n      }\n      if (f.basename.endsWith(\".shp\")) grouped[nameroot].shp = f;\n      if (f.basename.endsWith(\".shx\")) grouped[nameroot].shx = f;\n      if (f.basename.endsWith(\".dbf\")) grouped[nameroot].dbf = f;\n      if (f.basename.endsWith(\".prj\")) grouped[nameroot].prj = f;\n      if (f.basename.endsWith(\".cpg\")) grouped[nameroot].cpg = f;\n      if (f.basename.endsWith(\".qpj\")) grouped[nameroot].qpj = f;\n    });\n    return Object.values(grouped).filter(f => f && f.shp);;\n}\n\nfunction groupToShapefileObject(group) {\n    if (!group.shp) return null;\n    return {\n        \"file\":{\n            class: \"File\",\n            path: group.shp.path,\n            basename: group.shp.basename,\n            nameroot: group.shp.nameroot,\n            nameext: group.shp.nameext,\n            secondaryFiles: [group.shx, group.dbf, group.prj,group.cpg,group.qpj].filter(Boolean)\n        }\n    };\n}\n\nvar shapefiles = groupShapefilesByNameroot(self);\nif(shapefiles.length == 1)\n    return groupToShapefileObject(shapefiles.at(0));\nreturn shapefiles.map(groupToShapefileObject).filter(Boolean);\n}\n  "
+                        "glob": "*_filtered.shp"
                     },
                     "id": "#filter.cwl/filtered_shapefile"
                 },
@@ -454,12 +570,12 @@
                     "type": "File",
                     "id": "#filter.cwl/standardOut",
                     "outputBinding": {
-                        "glob": "FILTER_$(inputs.gisFile.file.nameroot)_stdout.log"
+                        "glob": "FILTER_$(inputs.shapefile.nameroot)_stdout.log"
                     }
                 }
             ],
-            "stdout": "FILTER_$(inputs.gisFile.file.nameroot)_stdout.log",
-            "stderr": "FILTER_$(inputs.gisFile.file.nameroot)_stderr.log",
+            "stdout": "FILTER_$(inputs.shapefile.nameroot)_stdout.log",
+            "stderr": "FILTER_$(inputs.shapefile.nameroot)_stderr.log",
             "id": "#filter.cwl"
         },
         {
@@ -469,21 +585,13 @@
             ],
             "hints": [
                 {
-                    "dockerPull": "logru/africapolis:1.0.0",
+                    "dockerPull": "logru/fishnet-apps:1.1.0",
                     "class": "DockerRequirement"
                 }
             ],
             "requirements": [
                 {
                     "class": "InlineJavascriptRequirement"
-                },
-                {
-                    "class": "SchemaDefRequirement",
-                    "types": [
-                        {
-                            "$import": "#Shapefile.yaml/Shapefile"
-                        }
-                    ]
                 }
             ],
             "inputs": [
@@ -500,11 +608,30 @@
                 {
                     "type": {
                         "type": "array",
-                        "items": "#Shapefile.yaml/Shapefile",
-                        "inputBinding": {
-                            "valueFrom": "$(self.file)"
-                        }
+                        "items": "File"
                     },
+                    "secondaryFiles": [
+                        {
+                            "pattern": "^.shx",
+                            "required": null
+                        },
+                        {
+                            "pattern": "^.dbf",
+                            "required": null
+                        },
+                        {
+                            "pattern": "^.prj",
+                            "required": null
+                        },
+                        {
+                            "pattern": "^.cpg",
+                            "required": false
+                        },
+                        {
+                            "pattern": "^.qpj",
+                            "required": false
+                        }
+                    ],
                     "inputBinding": {
                         "prefix": "-i"
                     },
@@ -521,10 +648,31 @@
                     }
                 },
                 {
-                    "type": "#Shapefile.yaml/Shapefile",
+                    "type": "File",
+                    "secondaryFiles": [
+                        {
+                            "pattern": "^.shx",
+                            "required": null
+                        },
+                        {
+                            "pattern": "^.dbf",
+                            "required": null
+                        },
+                        {
+                            "pattern": "^.prj",
+                            "required": null
+                        },
+                        {
+                            "pattern": "^.cpg",
+                            "required": false
+                        },
+                        {
+                            "pattern": "^.qpj",
+                            "required": false
+                        }
+                    ],
                     "outputBinding": {
-                        "glob": "$(inputs.outputPath).*",
-                        "outputEval": "${\nfunction groupShapefilesByNameroot(files) {\n    var grouped = {};\n    files.forEach(function(f) {\n      var nameroot = f.nameroot || f.basename.replace(/\\.[^/.]+$/, \"\");\n      if (!grouped[nameroot]) {\n        grouped[nameroot] = {};\n      }\n      if (f.basename.endsWith(\".shp\")) grouped[nameroot].shp = f;\n      if (f.basename.endsWith(\".shx\")) grouped[nameroot].shx = f;\n      if (f.basename.endsWith(\".dbf\")) grouped[nameroot].dbf = f;\n      if (f.basename.endsWith(\".prj\")) grouped[nameroot].prj = f;\n      if (f.basename.endsWith(\".cpg\")) grouped[nameroot].cpg = f;\n      if (f.basename.endsWith(\".qpj\")) grouped[nameroot].qpj = f;\n    });\n    return Object.values(grouped).filter(f => f && f.shp);;\n}\n\nfunction groupToShapefileObject(group) {\n    if (!group.shp) return null;\n    return {\n        \"file\":{\n            class: \"File\",\n            path: group.shp.path,\n            basename: group.shp.basename,\n            nameroot: group.shp.nameroot,\n            nameext: group.shp.nameext,\n            secondaryFiles: [group.shx, group.dbf, group.prj,group.cpg,group.qpj].filter(Boolean)\n        }\n    };\n}\n\nvar shapefiles = groupShapefilesByNameroot(self);\nif(shapefiles.length == 1)\n    return groupToShapefileObject(shapefiles.at(0));\nreturn shapefiles.map(groupToShapefileObject).filter(Boolean);\n}\n  "
+                        "glob": "$(inputs.outputPath).shp"
                     },
                     "doc": "Merged output file",
                     "id": "#merge.cwl/mergedOutput"
@@ -548,55 +696,57 @@
             ],
             "hints": [
                 {
-                    "dockerPull": "logru/africapolis:1.0.0",
+                    "dockerPull": "logru/fishnet-apps:1.1.0",
                     "class": "DockerRequirement"
                 }
             ],
             "requirements": [
-                {
-                    "class": "SchemaDefRequirement",
-                    "types": [
-                        {
-                            "$import": "#GeoTIFF.yaml/GeoTIFF"
-                        },
-                        {
-                            "$import": "#GeoTIFF.yaml/Shapefile"
-                        },
-                        {
-                            "$import": "#Shapefile.yaml/Shapefile"
-                        }
-                    ]
-                },
                 {
                     "class": "InlineJavascriptRequirement"
                 }
             ],
             "inputs": [
                 {
-                    "type": [
-                        "#GeoTIFF.yaml/GeoTIFF"
-                    ],
-                    "inputBinding": {
-                        "position": 1,
-                        "prefix": "--input",
-                        "valueFrom": "$(self.file)"
-                    },
-                    "id": "#split.cwl/gisFile"
-                },
-                {
                     "type": "string",
                     "default": "./",
                     "inputBinding": {
-                        "position": 3,
                         "prefix": "-o"
                     },
                     "doc": "Output directory",
                     "id": "#split.cwl/outputDir"
                 },
                 {
+                    "type": "File",
+                    "secondaryFiles": [
+                        {
+                            "pattern": "^.shx",
+                            "required": null
+                        },
+                        {
+                            "pattern": "^.dbf",
+                            "required": null
+                        },
+                        {
+                            "pattern": "^.prj",
+                            "required": null
+                        },
+                        {
+                            "pattern": "^.cpg",
+                            "required": false
+                        },
+                        {
+                            "pattern": "^.qpj",
+                            "required": false
+                        }
+                    ],
+                    "inputBinding": {
+                        "prefix": "--input"
+                    },
+                    "id": "#split.cwl/shapefile"
+                },
+                {
                     "type": "int",
                     "inputBinding": {
-                        "position": 2,
                         "prefix": "-s"
                     },
                     "id": "#split.cwl/splits"
@@ -625,17 +775,38 @@
                     "type": "File",
                     "id": "#split.cwl/errorOut",
                     "outputBinding": {
-                        "glob": "SPLIT_$(inputs.gisFile.file.nameroot)_stderr.log"
+                        "glob": "SPLIT_$(inputs.shapefile.nameroot)_stderr.log"
                     }
                 },
                 {
                     "type": {
                         "type": "array",
-                        "items": "#Shapefile.yaml/Shapefile"
+                        "items": "File"
                     },
+                    "secondaryFiles": [
+                        {
+                            "pattern": "^.shx",
+                            "required": null
+                        },
+                        {
+                            "pattern": "^.dbf",
+                            "required": null
+                        },
+                        {
+                            "pattern": "^.prj",
+                            "required": null
+                        },
+                        {
+                            "pattern": "^.cpg",
+                            "required": false
+                        },
+                        {
+                            "pattern": "^.qpj",
+                            "required": false
+                        }
+                    ],
                     "outputBinding": {
-                        "glob": "$(inputs.gisFile.file.nameroot)*",
-                        "outputEval": "${\nfunction groupShapefilesByNameroot(files) {\n    var grouped = {};\n    files.forEach(function(f) {\n      var nameroot = f.nameroot || f.basename.replace(/\\.[^/.]+$/, \"\");\n      if (!grouped[nameroot]) {\n        grouped[nameroot] = {};\n      }\n      if (f.basename.endsWith(\".shp\")) grouped[nameroot].shp = f;\n      if (f.basename.endsWith(\".shx\")) grouped[nameroot].shx = f;\n      if (f.basename.endsWith(\".dbf\")) grouped[nameroot].dbf = f;\n      if (f.basename.endsWith(\".prj\")) grouped[nameroot].prj = f;\n      if (f.basename.endsWith(\".cpg\")) grouped[nameroot].cpg = f;\n      if (f.basename.endsWith(\".qpj\")) grouped[nameroot].qpj = f;\n    });\n    return Object.values(grouped).filter(f => f && f.shp);;\n}\n\nfunction groupToShapefileObject(group) {\n    if (!group.shp) return null;\n    return {\n        \"file\":{\n            class: \"File\",\n            path: group.shp.path,\n            basename: group.shp.basename,\n            nameroot: group.shp.nameroot,\n            nameext: group.shp.nameext,\n            secondaryFiles: [group.shx, group.dbf, group.prj,group.cpg,group.qpj].filter(Boolean)\n        }\n    };\n}\n\nvar shapefiles = groupShapefilesByNameroot(self);\nif(shapefiles.length == 1)\n    return groupToShapefileObject(shapefiles.at(0));\nreturn shapefiles.map(groupToShapefileObject).filter(Boolean);\n}\n  "
+                        "glob": "$(inputs.shapefile.nameroot)*.shp"
                     },
                     "doc": "Split output files",
                     "id": "#split.cwl/split_shapefiles"
@@ -644,12 +815,12 @@
                     "type": "File",
                     "id": "#split.cwl/standardOut",
                     "outputBinding": {
-                        "glob": "SPLIT_$(inputs.gisFile.file.nameroot)_stdout.log"
+                        "glob": "SPLIT_$(inputs.shapefile.nameroot)_stdout.log"
                     }
                 }
             ],
-            "stdout": "SPLIT_$(inputs.gisFile.file.nameroot)_stdout.log",
-            "stderr": "SPLIT_$(inputs.gisFile.file.nameroot)_stderr.log",
+            "stdout": "SPLIT_$(inputs.shapefile.nameroot)_stdout.log",
+            "stderr": "SPLIT_$(inputs.shapefile.nameroot)_stderr.log",
             "id": "#split.cwl"
         },
         {
@@ -678,6 +849,7 @@
                         "type": "array",
                         "items": "File"
                     },
+                    "doc": "List of graph binary files generated in the graph generation step",
                     "id": "#GraphComponents.cwl/graphBinaries"
                 }
             ],
@@ -770,7 +942,7 @@
             ],
             "hints": [
                 {
-                    "dockerPull": "logru/africapolis:1.0.0",
+                    "dockerPull": "logru/africapolis:1.1.0",
                     "class": "DockerRequirement"
                 }
             ],
@@ -843,9 +1015,6 @@
                     "class": "SchemaDefRequirement",
                     "types": [
                         {
-                            "$import": "#Shapefile.yaml/Shapefile"
-                        },
-                        {
                             "$import": "#GraphConstructionWorkload.yaml/GraphConstructionWorkload"
                         }
                     ]
@@ -876,8 +1045,30 @@
                 {
                     "type": {
                         "type": "array",
-                        "items": "#Shapefile.yaml/Shapefile"
+                        "items": "File"
                     },
+                    "secondaryFiles": [
+                        {
+                            "pattern": "^.shx",
+                            "required": null
+                        },
+                        {
+                            "pattern": "^.dbf",
+                            "required": null
+                        },
+                        {
+                            "pattern": "^.prj",
+                            "required": null
+                        },
+                        {
+                            "pattern": "^.cpg",
+                            "required": false
+                        },
+                        {
+                            "pattern": "^.qpj",
+                            "required": false
+                        }
+                    ],
                     "doc": "List of shapefiles to be used for graph construction. Each polygon must be associated with a unique FISHNET ID.",
                     "id": "#GraphGeneration.cwl/shapefiles"
                 }
@@ -949,19 +1140,11 @@
             ],
             "hints": [
                 {
-                    "dockerPull": "logru/africapolis:1.0.0",
+                    "dockerPull": "logru/africapolis:1.1.0",
                     "class": "DockerRequirement"
                 }
             ],
             "requirements": [
-                {
-                    "class": "SchemaDefRequirement",
-                    "types": [
-                        {
-                            "$import": "#Shapefile.yaml/Shapefile"
-                        }
-                    ]
-                },
                 {
                     "class": "InlineJavascriptRequirement"
                 }
@@ -970,11 +1153,30 @@
                 {
                     "type": {
                         "type": "array",
-                        "items": "#Shapefile.yaml/Shapefile",
-                        "inputBinding": {
-                            "valueFrom": "$(self.file)"
-                        }
+                        "items": "File"
                     },
+                    "secondaryFiles": [
+                        {
+                            "pattern": "^.shx",
+                            "required": null
+                        },
+                        {
+                            "pattern": "^.dbf",
+                            "required": null
+                        },
+                        {
+                            "pattern": "^.prj",
+                            "required": null
+                        },
+                        {
+                            "pattern": "^.cpg",
+                            "required": false
+                        },
+                        {
+                            "pattern": "^.qpj",
+                            "required": false
+                        }
+                    ],
                     "inputBinding": {
                         "prefix": "-a"
                     },
@@ -990,10 +1192,31 @@
                     "id": "#GraphGenerationTool.cwl/config"
                 },
                 {
-                    "type": "#Shapefile.yaml/Shapefile",
+                    "type": "File",
+                    "secondaryFiles": [
+                        {
+                            "pattern": "^.shx",
+                            "required": null
+                        },
+                        {
+                            "pattern": "^.dbf",
+                            "required": null
+                        },
+                        {
+                            "pattern": "^.prj",
+                            "required": null
+                        },
+                        {
+                            "pattern": "^.cpg",
+                            "required": false
+                        },
+                        {
+                            "pattern": "^.qpj",
+                            "required": false
+                        }
+                    ],
                     "inputBinding": {
-                        "prefix": "-i",
-                        "valueFrom": "$(self.file)"
+                        "prefix": "-i"
                     },
                     "doc": "Primary input, supplied as shapefile object",
                     "id": "#GraphGenerationTool.cwl/primaryInput"
@@ -1004,7 +1227,7 @@
                     "type": "File",
                     "id": "#GraphGenerationTool.cwl/errorOut",
                     "outputBinding": {
-                        "glob": "GENERATE_GRAPH_$(inputs.primaryInput.file.nameroot)_stderr.log"
+                        "glob": "GENERATE_GRAPH_$(inputs.primaryInput.nameroot)_stderr.log"
                     }
                 },
                 {
@@ -1019,12 +1242,12 @@
                     "type": "File",
                     "id": "#GraphGenerationTool.cwl/standardOut",
                     "outputBinding": {
-                        "glob": "GENERATE_GRAPH_$(inputs.primaryInput.file.nameroot)_stdout.log"
+                        "glob": "GENERATE_GRAPH_$(inputs.primaryInput.nameroot)_stdout.log"
                     }
                 }
             ],
-            "stdout": "GENERATE_GRAPH_$(inputs.primaryInput.file.nameroot)_stdout.log",
-            "stderr": "GENERATE_GRAPH_$(inputs.primaryInput.file.nameroot)_stderr.log",
+            "stdout": "GENERATE_GRAPH_$(inputs.primaryInput.nameroot)_stdout.log",
+            "stderr": "GENERATE_GRAPH_$(inputs.primaryInput.nameroot)_stderr.log",
             "id": "#GraphGenerationTool.cwl"
         },
         {
@@ -1033,15 +1256,6 @@
                 {
                     "class": "SchemaDefRequirement",
                     "types": [
-                        {
-                            "$import": "#Shapefile.yaml/Shapefile"
-                        },
-                        {
-                            "$import": "#GeoTIFF.yaml/GeoTIFF"
-                        },
-                        {
-                            "$import": "#GeoTIFF.yaml/Shapefile"
-                        },
                         {
                             "$import": "#GraphConstructionWorkload.yaml/GraphConstructionWorkload"
                         }
@@ -1059,8 +1273,30 @@
                 {
                     "type": {
                         "type": "array",
-                        "items": "#Shapefile.yaml/Shapefile"
+                        "items": "File"
                     },
+                    "secondaryFiles": [
+                        {
+                            "pattern": "^.shx",
+                            "required": null
+                        },
+                        {
+                            "pattern": "^.dbf",
+                            "required": null
+                        },
+                        {
+                            "pattern": "^.prj",
+                            "required": null
+                        },
+                        {
+                            "pattern": "^.cpg",
+                            "required": false
+                        },
+                        {
+                            "pattern": "^.qpj",
+                            "required": false
+                        }
+                    ],
                     "id": "#PrepareGraphConstruction.cwl/shapefiles"
                 }
             ],
@@ -1073,7 +1309,7 @@
                     "id": "#PrepareGraphConstruction.cwl/graph_construction_workload"
                 }
             ],
-            "expression": "${\nclass Coordinate{\n    constructor(x,y){\n        this.x = x;\n        this.y = y;\n    }\n    infinityDistance(other) {\n        return Math.max(Math.abs(this.x-other.x),Math.abs(this.y-other.y));\n    }\n\n    toString() {\n        return this.x+\",\"+this.y;\n    }\n};\n\nfunction stringToCoordinate(coordinateString){\n    return new Coordinate(...coordinateString.split(\",\").map(Number));\n}\n\nfunction shapefileObjectToCoordinate(filename,prefix){\n    const regex = new RegExp(`${prefix}_(\\\\d+)_(\\\\d+)_.*`);\n    const match = filename.match(regex);\n    if (match) {\n        return new Coordinate(parseInt(match[1]), parseInt(match[2]));\n    }\n    throw new Error(\"Could not parse grid coordinates from filename \\\"\"+filename+\"\\\" with prefix \\\"\"+prefix+\"\\\"\");\n}\nfunction neighbouringShapefiles(shapefiles, prefix){\n    const shapefileCoordinateMap = {};\n    shapefiles.forEach(s => {\n        const nameroot = s.file.nameroot;\n        const coordinate = shapefileObjectToCoordinate(nameroot,prefix);\n        shapefileCoordinateMap[coordinate] = s;\n    });\n    return Object.keys(shapefileCoordinateMap).map(coordinate => {\n        const primaryInput = shapefileCoordinateMap[coordinate];\n        const currentCoordinate = stringToCoordinate(coordinate);\n        const additionalInput = Object.keys(shapefileCoordinateMap).filter(other => {\n            const distance = stringToCoordinate(other).infinityDistance(currentCoordinate);\n            return distance > 0 && distance <=1;\n        }).map(c => shapefileCoordinateMap[c]);\n        if(additionalInput.length == 0){\n            return {\n                \"primaryInput\":primaryInput,\n                \"additionalInput\":null\n            };\n        }\n        else return {\n            \"primaryInput\":primaryInput,\n            \"additionalInput\":additionalInput\n        };\n    });\n}\n// TODO make it work even when no prefix is given\nconst result = neighbouringShapefiles(inputs.shapefiles,inputs.filenamePrefix);\nreturn {\"graph_construction_workload\":result};\n}",
+            "expression": "${\nclass Coordinate{\n    constructor(x,y){\n        this.x = x;\n        this.y = y;\n    }\n    infinityDistance(other) {\n        return Math.max(Math.abs(this.x-other.x),Math.abs(this.y-other.y));\n    }\n\n    toString() {\n        return this.x+\",\"+this.y;\n    }\n};\n\nfunction stringToCoordinate(coordinateString){\n    return new Coordinate(...coordinateString.split(\",\").map(Number));\n}\n\nfunction shapefileObjectToCoordinate(filename,prefix){\n    const regex = new RegExp(`${prefix}_(\\\\d+)_(\\\\d+)_.*`);\n    const match = filename.match(regex);\n    if (match) {\n        return new Coordinate(parseInt(match[1]), parseInt(match[2]));\n    }\n    throw new Error(\"Could not parse grid coordinates from filename \\\"\"+filename+\"\\\" with prefix \\\"\"+prefix+\"\\\"\");\n}\nfunction neighbouringShapefiles(shapefiles, prefix){\n    const shapefileCoordinateMap = {};\n    shapefiles.forEach(s => {\n        const nameroot = s.nameroot;\n        const coordinate = shapefileObjectToCoordinate(nameroot,prefix);\n        shapefileCoordinateMap[coordinate] = s;\n    });\n    return Object.keys(shapefileCoordinateMap).map(coordinate => {\n        const primaryInput = shapefileCoordinateMap[coordinate];\n        const currentCoordinate = stringToCoordinate(coordinate);\n        const additionalInput = Object.keys(shapefileCoordinateMap).filter(other => {\n            const distance = stringToCoordinate(other).infinityDistance(currentCoordinate);\n            return distance > 0 && distance <=1;\n        }).map(c => shapefileCoordinateMap[c]);\n        if(additionalInput.length == 0){\n            return {\n                \"primaryInput\":primaryInput,\n                \"additionalInput\":null\n            };\n        }\n        else return {\n            \"primaryInput\":primaryInput,\n            \"additionalInput\":additionalInput\n        };\n    });\n}\n// TODO make it work even when no prefix is given\nconst result = neighbouringShapefiles(inputs.shapefiles,inputs.filenamePrefix);\nreturn {\"graph_construction_workload\":result};\n}",
             "id": "#PrepareGraphConstruction.cwl"
         },
         {
@@ -1082,9 +1318,6 @@
                 {
                     "class": "SchemaDefRequirement",
                     "types": [
-                        {
-                            "$import": "#Shapefile.yaml/Shapefile"
-                        },
                         {
                             "$import": "#ComponentsOutput.yaml/ComponentsOutput"
                         },
@@ -1103,8 +1336,30 @@
                 {
                     "type": {
                         "type": "array",
-                        "items": "#Shapefile.yaml/Shapefile"
+                        "items": "File"
                     },
+                    "secondaryFiles": [
+                        {
+                            "pattern": "^.shx",
+                            "required": null
+                        },
+                        {
+                            "pattern": "^.dbf",
+                            "required": null
+                        },
+                        {
+                            "pattern": "^.prj",
+                            "required": null
+                        },
+                        {
+                            "pattern": "^.cpg",
+                            "required": false
+                        },
+                        {
+                            "pattern": "^.qpj",
+                            "required": false
+                        }
+                    ],
                     "doc": "List of shapefiles to be used for assigning the workload for the clustering",
                     "id": "#SpatialClustering.cwl/files"
                 },
@@ -1116,7 +1371,29 @@
             ],
             "outputs": [
                 {
-                    "type": "#Shapefile.yaml/Shapefile",
+                    "type": "File",
+                    "secondaryFiles": [
+                        {
+                            "pattern": "^.shx",
+                            "required": null
+                        },
+                        {
+                            "pattern": "^.dbf",
+                            "required": null
+                        },
+                        {
+                            "pattern": "^.prj",
+                            "required": null
+                        },
+                        {
+                            "pattern": "^.cpg",
+                            "required": false
+                        },
+                        {
+                            "pattern": "^.qpj",
+                            "required": false
+                        }
+                    ],
                     "outputSource": "#SpatialClustering.cwl/clustering/clusteredOutput",
                     "id": "#SpatialClustering.cwl/clusteredOutput"
                 }
@@ -1161,8 +1438,30 @@
                             {
                                 "type": {
                                     "type": "array",
-                                    "items": "#Shapefile.yaml/Shapefile"
+                                    "items": "File"
                                 },
+                                "secondaryFiles": [
+                                    {
+                                        "pattern": "^.shx",
+                                        "required": null
+                                    },
+                                    {
+                                        "pattern": "^.dbf",
+                                        "required": null
+                                    },
+                                    {
+                                        "pattern": "^.prj",
+                                        "required": null
+                                    },
+                                    {
+                                        "pattern": "^.cpg",
+                                        "required": false
+                                    },
+                                    {
+                                        "pattern": "^.qpj",
+                                        "required": false
+                                    }
+                                ],
                                 "doc": "List of shapefiles to be used for assigning the workload for the clustering step",
                                 "id": "#SpatialClustering.cwl/prepare_cluster_workload/run/files"
                             },
@@ -1178,7 +1477,7 @@
                                 "id": "#SpatialClustering.cwl/prepare_cluster_workload/run/clusterWorkload"
                             }
                         ],
-                        "expression": "${\n    let workloadJson = JSON.parse(inputs.workload.workloadJson.contents);\n    let fileNames = [...new Set(workloadJson.files.map(file => file.split(\"/\").pop()))];\n    let files = fileNames.map(fileName => {\n        let fileObject = inputs.files.find(f => f.file.basename == fileName);\n        return fileObject;\n        });\n    let result = {\n        graphBinary: inputs.workload.graphBinary,\n        shpFiles: files\n    };\n    return {\n        clusterWorkload: result,\n    };\n}\n"
+                        "expression": "${\n    let workloadJson = JSON.parse(inputs.workload.workloadJson.contents);\n    let fileNames = [...new Set(workloadJson.files.map(file => file.split(\"/\").pop()))];\n    let files = fileNames.map(fileName => {\n        let fileObject = inputs.files.find(f => f.basename == fileName);\n        return fileObject;\n        });\n    let result = {\n        graphBinary: inputs.workload.graphBinary,\n        shpFiles: files\n    };\n    return {\n        clusterWorkload: result,\n    };\n}\n"
                     },
                     "in": [
                         {
@@ -1205,21 +1504,13 @@
             ],
             "hints": [
                 {
-                    "dockerPull": "logru/africapolis:1.0.0",
+                    "dockerPull": "logru/africapolis:1.1.0",
                     "class": "DockerRequirement"
                 }
             ],
             "requirements": [
                 {
                     "class": "InlineJavascriptRequirement"
-                },
-                {
-                    "class": "SchemaDefRequirement",
-                    "types": [
-                        {
-                            "$import": "#Shapefile.yaml/Shapefile"
-                        }
-                    ]
                 }
             ],
             "inputs": [
@@ -1242,7 +1533,6 @@
                 {
                     "type": "string",
                     "inputBinding": {
-                        "position": 2,
                         "prefix": "--outputStem"
                     },
                     "doc": "Output filename storing the merged polygons",
@@ -1251,11 +1541,30 @@
                 {
                     "type": {
                         "type": "array",
-                        "items": "#Shapefile.yaml/Shapefile",
-                        "inputBinding": {
-                            "valueFrom": "$(self.file)"
-                        }
+                        "items": "File"
                     },
+                    "secondaryFiles": [
+                        {
+                            "pattern": "^.shx",
+                            "required": null
+                        },
+                        {
+                            "pattern": "^.dbf",
+                            "required": null
+                        },
+                        {
+                            "pattern": "^.prj",
+                            "required": null
+                        },
+                        {
+                            "pattern": "^.cpg",
+                            "required": false
+                        },
+                        {
+                            "pattern": "^.qpj",
+                            "required": false
+                        }
+                    ],
                     "inputBinding": {
                         "prefix": "-i"
                     },
@@ -1265,12 +1574,33 @@
             ],
             "outputs": [
                 {
-                    "type": "#Shapefile.yaml/Shapefile",
+                    "type": "File",
+                    "secondaryFiles": [
+                        {
+                            "pattern": "^.shx",
+                            "required": null
+                        },
+                        {
+                            "pattern": "^.dbf",
+                            "required": null
+                        },
+                        {
+                            "pattern": "^.prj",
+                            "required": null
+                        },
+                        {
+                            "pattern": "^.cpg",
+                            "required": false
+                        },
+                        {
+                            "pattern": "^.qpj",
+                            "required": false
+                        }
+                    ],
                     "outputBinding": {
-                        "glob": "$(inputs.outputStem).*",
-                        "outputEval": "${\nfunction groupShapefilesByNameroot(files) {\n    var grouped = {};\n    files.forEach(function(f) {\n      var nameroot = f.nameroot || f.basename.replace(/\\.[^/.]+$/, \"\");\n      if (!grouped[nameroot]) {\n        grouped[nameroot] = {};\n      }\n      if (f.basename.endsWith(\".shp\")) grouped[nameroot].shp = f;\n      if (f.basename.endsWith(\".shx\")) grouped[nameroot].shx = f;\n      if (f.basename.endsWith(\".dbf\")) grouped[nameroot].dbf = f;\n      if (f.basename.endsWith(\".prj\")) grouped[nameroot].prj = f;\n      if (f.basename.endsWith(\".cpg\")) grouped[nameroot].cpg = f;\n      if (f.basename.endsWith(\".qpj\")) grouped[nameroot].qpj = f;\n    });\n    return Object.values(grouped).filter(f => f && f.shp);;\n}\n\nfunction groupToShapefileObject(group) {\n    if (!group.shp) return null;\n    return {\n        \"file\":{\n            class: \"File\",\n            path: group.shp.path,\n            basename: group.shp.basename,\n            nameroot: group.shp.nameroot,\n            nameext: group.shp.nameext,\n            secondaryFiles: [group.shx, group.dbf, group.prj,group.cpg,group.qpj].filter(Boolean)\n        }\n    };\n}\n\nvar shapefiles = groupShapefilesByNameroot(self);\nif(shapefiles.length == 1)\n    return groupToShapefileObject(shapefiles.at(0));\nreturn shapefiles.map(groupToShapefileObject).filter(Boolean);\n}\n  "
+                        "glob": "$(inputs.outputStem).shp"
                     },
-                    "doc": "Merged output file",
+                    "doc": "Clustering output shapefile",
                     "id": "#SpatialClusteringTool.cwl/clusteredOutput"
                 },
                 {

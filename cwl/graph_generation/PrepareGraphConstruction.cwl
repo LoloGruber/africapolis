@@ -3,11 +3,12 @@ class: ExpressionTool
 requirements:
   - class: SchemaDefRequirement
     types: 
-    - $import: ../types/Shapefile.yaml
-    - $import: ../types/GeoTIFF.yaml
     - $import: ../types/GraphConstructionWorkload.yaml
 inputs:
-    shapefiles: ../types/Shapefile.yaml#Shapefile[]
+    shapefiles: 
+        type: File[]
+        secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
+        # format: SHP
     filenamePrefix: string?
 outputs: 
     graph_construction_workload:
@@ -43,7 +44,7 @@ expression: |
     function neighbouringShapefiles(shapefiles, prefix){
         const shapefileCoordinateMap = {};
         shapefiles.forEach(s => {
-            const nameroot = s.file.nameroot;
+            const nameroot = s.nameroot;
             const coordinate = shapefileObjectToCoordinate(nameroot,prefix);
             shapefileCoordinateMap[coordinate] = s;
         });

@@ -5,23 +5,19 @@ hints:
   DockerRequirement:
     dockerPull: logru/africapolis:1.1.0
 requirements:
-    - class: SchemaDefRequirement
-      types: 
-        - $import: ../types/Shapefile.yaml
-    - class: InlineJavascriptRequirement
+  InlineJavascriptRequirement: {}
 inputs:
   primaryInput:
-    type: ../types/Shapefile.yaml#Shapefile
+    type: File
+    secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
+    # # format: SHP
     inputBinding:
         prefix: -i
-        valueFrom: $(self.file)
     doc: "Primary input, supplied as shapefile object"
   additionalInput:
-    type: 
-      type: array
-      items: ../types/Shapefile.yaml#Shapefile
-      inputBinding:
-        valueFrom: $(self.file)
+    type: File[]
+    secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
+    # format: SHP
     inputBinding:
         prefix: -a
     doc: "List of additional input shapefiles in proximity to the primary input, with their required secondary files (.dbf, .shx, .prj)"
@@ -41,5 +37,5 @@ outputs:
             glob: "*.bin"
             outputEval: $(self[0])
             
-stdout: GENERATE_GRAPH_$(inputs.primaryInput.file.nameroot)_stdout.log
-stderr: GENERATE_GRAPH_$(inputs.primaryInput.file.nameroot)_stderr.log
+stdout: GENERATE_GRAPH_$(inputs.primaryInput.nameroot)_stdout.log
+stderr: GENERATE_GRAPH_$(inputs.primaryInput.nameroot)_stderr.log

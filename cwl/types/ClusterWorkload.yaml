@@ -3,5 +3,8 @@ type: record
 fields:
   - name: graphBinary
     type: File
+    # format: BIN
   - name: shpFiles
-    type: Shapefile.yaml#Shapefile[]
+    type: File[]
+    secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
+    # format: SHP
