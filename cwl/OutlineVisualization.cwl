@@ -3,7 +3,7 @@ cwlVersion: v1.2
 baseCommand: [AfricapolisPolygonOutline]
 hints:
   DockerRequirement:
-    dockerPull: logru/africapolis:1.1.0
+    dockerPull: logru/africapolis:latest
 requirements:
   InlineJavascriptRequirement: {}
 inputs:
