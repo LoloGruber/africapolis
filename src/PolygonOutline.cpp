@@ -18,7 +18,7 @@ auto concaveHull(const MultiPolygon_t & multiPolygon,double min_alpha){
         return nullptr or a MultiPolygon that cannot be cast to OGRPolygon.
         Clamp to a minimum so the hull stays computable. */
 
-    double computed_alpha = sqrt(sqrt(1.0 / static_cast<double>(fishnet::util::size(multiPolygon.getPolygons()))));
+    double computed_alpha = sqrt(1.0 / static_cast<double>(fishnet::util::size(multiPolygon.getPolygons())));
     double alpha = std::max(min_alpha, computed_alpha);
 
     OGRGeometry* hullGeometryPtr = multiPoint.ConcaveHull(alpha, true);
