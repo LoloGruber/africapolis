@@ -11,14 +11,15 @@ sudo apt-get install cwltool
 ```
 ### Running the Workflow
 ```
-cwltool Africapolis.cwl <CWL-Job>.json
+cwltool Africapolis.cwl --shapefile <File.shp> --configFile <Config.Json> --partitions <UnsignedInt>
 ``` 
 # Deployment
 ## Docker
-A custom docker image containing the binaries and the GDAL library is built using the [Dockerfile](Dockerfile)
+A custom docker image containing the binaries and the GDAL library is built using the [Dockerfile](Dockerfile). Use the [CWL Workflow File](cwl/Africapolis.cwl) to run the workflow.
 ## HPC
+Use the [Africapolis Shellscript](prod/hpc/run-africapolis.sh) to install and run the workflow on a HPC system. You can also do the following steps manually:
 ### 1. Upload Files
-- Upload CWL directory containing the main workflow file `Africapolis.cwl` in the same directory structure is in the repository (packed/single file version does not work with `toil`)
+- Upload CWL directory containing the main workflow file `Africapolis.cwl` in the same directory structure as in the repository (packed/single file version does not work with `toil`)
 - Upload input files or pull from STAC
 - Upload config file(s)
 - Store files in [corresponding directory](directory_structure.png)
@@ -37,13 +38,9 @@ source ~/africapolis-workflow/venv/bin/activate
 pip install toil[cwl]
 ```
 ### 3. Execute Workflow
-Use run script which creates an output directory for each experiment (input + config combination) 
-```
-./run.sh input/Corvara_IT.tiff cfg/dbscan200.json 1
-```
-or use `toil-cwl-runner` directly (current directory will be output directory)
+Execute via the `toil-cwl-runner` directly (current directory will be output directory)
 ```
 module load apptainer
 source ~/africapolis-workflow/venv/bin/activate
-toil-cwl-runner --singularity --batchSystem slurm  ~/africapolis-workflow/cwl/AfricapolisWorkflow.cwl ~/africapolis-workflow/jobs/<JobFile>.json
+toil-cwl-runner --singularity --batchSystem slurm  ~/africapolis-workflow/cwl/AfricapolisWorkflow.cwl --shapefile <File.shp> --configFile <Config.Json> --partitions <UnsignedInt>
 ```
