@@ -13,6 +13,7 @@ For all command line options refer to the official [documentation](https://cwlto
 | Flag | Behaviour |
 |---|---|
 | `--workDir` `<Directory>` | Sets directory for toil orchestration files
+| `--batchSystem slurm` | Schedule jobs via slurm 
 
 
 For all command line options refer to the official [documentation](https://toil.readthedocs.io/en/latest/running/cliOptions.html)
