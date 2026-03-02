@@ -16,7 +16,7 @@ inputs:
     secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
     # format: SHP
     doc: "Input file to Africapolis workflow"
-  config:
+  configFile:
     type: File
     # format: JSON
     doc: "Configuration file for Africapolis workflow"
@@ -46,7 +46,7 @@ steps:
     run: fishnet/filter.cwl
     in:
       shapefile: split/split_shapefiles
-      config: config
+      config: configFile
     scatter: [shapefile]
     out: [filtered_shapefile]
   graph_generation:
@@ -56,19 +56,19 @@ steps:
       filenamePrefix: 
         source: shapefile
         valueFrom: $(self.nameroot)
-      config: config
+      config: configFile
     out: [graphBinaries]
   graph_components:
     run: graph_components/GraphComponents.cwl
     in:
       graphBinaries: graph_generation/graphBinaries
-      config: config
+      config: configFile
     out: [componentsOutput]
   clustering:
     run: spatial_clustering/SpatialClustering.cwl
     in: 
       workload: graph_components/componentsOutput
-      config: config
+      config: configFile
       files: filter/filtered_shapefile
     scatter: [workload]
     scatterMethod: dotproduct
