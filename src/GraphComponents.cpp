@@ -102,7 +102,7 @@ private:
         }
         auto filePaths = fishnet::util::toVector(std::views::values(fileIdToPathMapComponent) | std::views::transform([](const auto & path) { return path.string(); }));
         // Build subgraph of component(s)
-        auto subgraph = fishnet::graph::GraphFactory::UndirectedGraph<ProxySettlement>(
+        auto subgraph = fishnet::graph::GraphFactory::UndirectedGraph(
             WritingBinarySettlementGraphAdjacency<ProxySettlement>(
             outputGraphBinPath,
             std::move(fileIdToPathMapComponent),

@@ -84,7 +84,7 @@ public:
     }
 
     void run() override{
-        auto graph = fishnet::graph::GraphFactory::UndirectedGraph<SettlementShape<S>>(
+        auto graph = fishnet::graph::GraphFactory::UndirectedGraph(
             WritingBinarySettlementGraphAdjacency<SettlementShape<S>>(
                 this->graphBinaryOutputPath,
                 std::move(this->fileRefMap),
