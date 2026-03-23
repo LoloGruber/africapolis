@@ -1,6 +1,7 @@
 #include <CLI/CLI.hpp>
 #include <magic_enum.hpp>
 #include <fishnet/Fishnet.hpp>
+#include <fishnet/DBSC.hpp>
 #include <fishnet/TaskConfig.hpp>
 #include <fishnet/DistanceFunction.hpp>
 #include <fishnet/DistancePredicate.hpp>
@@ -8,12 +9,31 @@
 #include <fishnet/IDReduceFunction.hpp>
 #include <fishnet/Task.hpp>
 #include "BinarySettlementGraphAdjacency.hpp"
+#include "fishnet/FunctionalConcepts.hpp"
+#include "fishnet/PathHelper.h"
 
 
 enum class ClusterMode {
     DBSCAN,
-    BFS
+    BFS,
+    DBSC
 };
+
+enum class DBSCAttributeFunction{
+    AREA,
+    NONE
+};
+
+template<typename T>
+static fishnet::util::UnaryFunction_t<T, double> attributeMapper(DBSCAttributeFunction attributeFunction){
+    switch(attributeFunction){
+        case DBSCAttributeFunction::AREA:
+            return [](const T & node){ return node.area(); };
+        case DBSCAttributeFunction::NONE:
+            return [](const T & node){ return 0.0; };
+    }
+    throw std::runtime_error("Unsupported attribute function");
+}
 
 struct ClusteringConfig:TaskConfig {
     constexpr static const char * CLUSTER_KEY = "clustering";
@@ -28,20 +48,38 @@ struct ClusteringConfig:TaskConfig {
         this->clusterArgs = clusterConfig.at(CLUSTER_ARGS_KEY);
     }
 
-    template<fishnet::graph::Graph G>
+    template<fishnet::graph::Graph G> requires(fishnet::geometry::Shape<typename G::node_type>)
     fishnet::ClusterAlgorithm_t<G> getSpatialClusterAlgorithm(DistanceFunction && distanceFunction) const {
+        using T = typename G::node_type;
         switch(this->clusterMode){
             case ClusterMode::DBSCAN:
                 {
                     double eps = clusterArgs.at("distance-threshold").get<double>();
                     size_t minPts = clusterArgs.at("min-cluster-size").get<size_t>(); 
-                    return fishnet::DBSCAN<typename G::node_type>(eps, minPts, [&distanceFunction](const typename G::node_type & lhs, const typename G::node_type & rhs){
+                    return fishnet::DBSCAN<T>(eps, minPts, [&distanceFunction](const typename G::node_type & lhs, const typename G::node_type & rhs){
                         return fishnet::geometry::shapeDistance(lhs,rhs,distanceFunction);
                     });
                 }
-            case ClusterMode::BFS:
-                double distanceThreshold = clusterArgs.at("distance-threshold").get<double>();
-                return fishnet::BFSClustering<typename G::node_type>(DistanceBiPredicate(std::move(distanceFunction), distanceThreshold));
+            case ClusterMode::BFS: 
+                {
+                    double distanceThreshold = clusterArgs.at("distance-threshold").get<double>();
+                    return fishnet::BFSClustering<T>(DistanceBiPredicate(std::move(distanceFunction), distanceThreshold));
+                }
+            case ClusterMode::DBSC:
+                {   
+                    double customT1 = clusterArgs.contains("t1") ? clusterArgs.at("t1").get<double>() : NAN;
+                    DBSCAttributeFunction attributeFunction = clusterArgs.contains("attribute-mapper") ? magic_enum::enum_cast<DBSCAttributeFunction>(clusterArgs.at("attribute-mapper").get<std::string>()).value_or(DBSCAttributeFunction::NONE) : DBSCAttributeFunction::NONE;
+                    return fishnet::DBSCBuilder<T>()
+                        .setEps(clusterArgs.at("distance-threshold").get<double>())
+                        .setBeta(clusterArgs.at("beta").get<size_t>())
+                        .setMinPts(clusterArgs.at("min-cluster-size").get<size_t>())
+                        .setDistanceFunction([distanceFunction](const typename G::node_type & lhs, const typename G::node_type & rhs){
+                            return fishnet::geometry::shapeDistance(lhs,rhs,distanceFunction);
+                        })
+                        .setAttributeExtractor(attributeMapper<T>(attributeFunction))
+                        .setT1(customT1)
+                        .build();
+                }
         }
         throw std::runtime_error("Unsupported clustering mode");
     }
@@ -105,7 +143,7 @@ public:
             this->graphFile,
             SettlementShapeDeserializer<ShapeType>{std::move(settlements)}
         );
-        auto graph = fishnet::graph::GraphFactory::UndirectedGraph<SettlementType>(std::move(adj));
+        auto graph = fishnet::graph::GraphFactory::UndirectedGraph(std::move(adj));
 
         // Run clustering
         auto clusterAlgorithm = config.getSpatialClusterAlgorithm<decltype(graph)>(distanceFunctionForSpatialReference(spatialRef));
@@ -128,7 +166,7 @@ public:
             feature.setAttribute(idField, size_t(9999999999999));
             outputLayer.addFeature(std::move(feature));
         }
-        fishnet::VectorIO::overwrite(outputLayer, fishnet::Shapefile(outputStem + ".shp"));
+        fishnet::VectorIO::overwrite(outputLayer, fishnet::Shapefile(fishnet::util::PathHelper::absoluteCanonical(outputStem + ".shp")));
     }
 
 

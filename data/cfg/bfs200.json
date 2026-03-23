@@ -1,0 +1,10 @@
+{
+    "clustering": {
+        "mode": "BFS",
+        "args": {
+            "distance-threshold": 200.0
+        }
+    },
+    "buffer-distance-meters": 200.0,
+    "max-neighbors-per-node": 5
+}
