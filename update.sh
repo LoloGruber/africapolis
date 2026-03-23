@@ -1,5 +1,5 @@
 #!/bin/bash
-VERSION=1.1.1
+VERSION=1.2.0
 docker build -t logru/africapolis:$VERSION -t logru/africapolis:latest .
 docker login 
 docker push logru/africapolis:$VERSION 
