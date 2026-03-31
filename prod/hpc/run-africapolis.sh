@@ -8,7 +8,7 @@ if [ ! -d "$WORKFLOW_DIR" ]; then
     git clone https://gitlab2.informatik.uni-wuerzburg.de/descartes/sos/africapolis
     cp -r africapolis/cwl/ $WORKFLOW_DIR/cwl
     cp -r africapolis/data/input $WORKFLOW_DIR/input
-    cp africapolis/data/cfg $WORKFLOW_DIR/cfg
+    cp -r fricapolis/data/cfg $WORKFLOW_DIR/cfg
     cd $WORKFLOW_DIR
     module load python 
     python -m venv venv
