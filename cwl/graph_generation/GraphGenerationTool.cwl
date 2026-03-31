@@ -6,6 +6,9 @@ hints:
     dockerPull: logru/africapolis:latest
 requirements:
   InlineJavascriptRequirement: {}
+  ResourceRequirement:
+    coresMin: 1
+    ramMin: 1000
 inputs:
   primaryInput:
     type: File

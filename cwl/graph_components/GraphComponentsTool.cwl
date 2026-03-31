@@ -4,6 +4,10 @@ baseCommand: [AfricapolisGraphComponents]
 hints:
   DockerRequirement:
     dockerPull: logru/africapolis:latest
+requirements:
+  ResourceRequirement:
+    coresMin: 1
+    ramMin: 1000
 inputs:
   config:
     type: File

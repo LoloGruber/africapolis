@@ -5,50 +5,51 @@ hints:
   DockerRequirement:
     dockerPull: logru/fishnet-apps:1.1.0
 requirements:
-    InlineJavascriptRequirement: {}
+  InlineJavascriptRequirement: {}
+  ResourceRequirement:
+    coresMin: 1
+    ramMin: 1000
 inputs:
-    shapefile:
-        type: File
-        secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
-        # format: SHP
-        inputBinding:
-            prefix: --input 
-    outputDir:
-        type: string
-        default: "./"
-        inputBinding:
-            prefix: -o
-        doc: "Output directory"
-    splits:
-        type: int
-        inputBinding:
-            prefix: -s
-    xOffset:
-        type: int
-        default: 0
-        inputBinding:
-            prefix: -x
-        doc: "X offset for the naming of the output tiles"
-    yOffset:
-        type: int
-        default: 0
-        inputBinding:
-            prefix: -y
-        doc: "Y offset for the naming of the output tiles"
+  shapefile:
+    type: File
+    secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
+    # format: SHP
+    inputBinding:
+        prefix: --input 
+  outputDir:
+    type: string
+    default: "./"
+    inputBinding:
+        prefix: -o
+    doc: "Output directory"
+  splits:
+    type: int
+    inputBinding:
+        prefix: -s
+  xOffset:
+    type: int
+    default: 0
+    inputBinding:
+        prefix: -x
+    doc: "X offset for the naming of the output tiles"
+  yOffset:
+    type: int
+    default: 0
+    inputBinding:
+        prefix: -y
+    doc: "Y offset for the naming of the output tiles"
 outputs:
-    standardOut:
-        type: stdout
-    errorOut:
-        type: stderr
-    split_shapefiles:
-        type: File[]
-        # format: SHP
-        secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
-        outputBinding:
-            glob: "$(inputs.shapefile.nameroot)*.shp"
-        doc: "Split output files"
-
-
+  standardOut:
+    type: stdout
+  errorOut:
+    type: stderr
+  split_shapefiles:
+    type: File[]
+    # format: SHP
+    secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
+    outputBinding:
+        glob: "$(inputs.shapefile.nameroot)*.shp"
+    doc: "Split output files"
 stdout: SPLIT_$(inputs.shapefile.nameroot)_stdout.log
 stderr: SPLIT_$(inputs.shapefile.nameroot)_stderr.log
     

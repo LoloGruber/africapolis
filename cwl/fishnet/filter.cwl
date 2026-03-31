@@ -6,6 +6,9 @@ hints:
     dockerPull: logru/fishnet-apps:1.1.0
 requirements:
   InlineJavascriptRequirement: {}
+  ResourceRequirement:
+    coresMin: 1
+    ramMin: 250
 inputs:
   shapefile:
     type: File

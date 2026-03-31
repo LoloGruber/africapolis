@@ -6,32 +6,35 @@ hints:
     dockerPull: logru/fishnet-apps:1.1.0
 requirements:
   InlineJavascriptRequirement: {}
+  ResourceRequirement:
+    coresMin: 1
+    ramMin: 1000
 inputs:
-    shpFiles:
-        type: File[]
-        secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
-        # format: SHP
-        inputBinding:
-            prefix: -i
-        doc: "List of input shapefiles, with their required secondary files (.dbf, .shx, .prj)"
-    outputPath:
-        type: string
-        inputBinding:
-            position: 2
-            prefix: -o 
-            valueFrom: $(self+".shp")
-        doc: "Output filename for result (Shapefile)"  
+  shpFiles:
+    type: File[]
+    secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
+    # format: SHP
+    inputBinding:
+        prefix: -i
+    doc: "List of input shapefiles, with their required secondary files (.dbf, .shx, .prj)"
+  outputPath:
+    type: string
+    inputBinding:
+        position: 2
+        prefix: -o 
+        valueFrom: $(self+".shp")
+    doc: "Output filename for result (Shapefile)"  
 outputs:
-    standardOut:
-        type: stdout
-    errorOut:
-        type: stderr
-    mergedOutput:
-        type: File
-        secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
-        # format: SHP
-        outputBinding:
-            glob: "$(inputs.outputPath).shp"
-        doc: "Merged output file"
+  standardOut:
+    type: stdout
+  errorOut:
+    type: stderr
+  mergedOutput:
+    type: File
+    secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
+    # format: SHP
+    outputBinding:
+        glob: "$(inputs.outputPath).shp"
+    doc: "Merged output file"
 stdout: MERGE_stdout.log
 stderr: MERGE_stderr.log
