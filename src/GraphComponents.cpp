@@ -1,9 +1,11 @@
 #include <future>
+#include <spdlog/spdlog.h>
 #include <CLI/CLI.hpp>
 #include <fishnet/Graph.hpp>
 #include <fishnet/Task.hpp>
 #include <fishnet/TaskConfig.hpp>
 #include <fishnet/BidirectionalMap.hpp>
+#include <unordered_set>
 #include "BinarySettlementGraphAdjacency.hpp"
 
 struct ClusterWorkload{
@@ -90,6 +92,29 @@ private:
         }
     }
 
+    void mergeSameFileSetWorkloads(std::vector<ClusterWorkload> & workloads) {
+        auto fileSetHash = [](const std::unordered_set<FileReference> & fileSet) {
+            size_t hash = 0;
+            for (const auto & fileRef : fileSet) {
+                hash ^= fileRef.fileId + 0x9e3779b9 + (hash << 6) + (hash >> 2);
+            }
+            return hash;
+        };
+
+        std::unordered_map<std::unordered_set<FileReference>, std::vector<size_t>, decltype(fileSetHash)> fileSetToComponentsMap;
+        for (const auto & workload : workloads) {
+            auto fileSet = fishnet::util::toUnorderedSet(workload.files);
+            fileSetToComponentsMap[fileSet].insert(fileSetToComponentsMap[fileSet].end(), workload.components.begin(), workload.components.end());
+        }
+        workloads.clear();
+        for (auto && [fileSet, components] : fileSetToComponentsMap) {
+            workloads.push_back(ClusterWorkload{
+                .files = fishnet::util::toVector(fileSet),
+                .components = std::move(components)
+            });
+        }
+    }
+
     ClusterWorkloadResult transformToWorkloadResult(const ClusterWorkload & workload, const std::unordered_map<FileReference, 
         std::filesystem::path> & fileIdToPathMap,
          const auto & graph,
@@ -134,8 +159,11 @@ public:
     GraphComponents(GraphComponentsConfig && config, std::vector<std::filesystem::path> binGraphFiles): config(std::move(config)), binGraphFiles(std::move(binGraphFiles)){}
 
     void run() override{
+        spdlog::info("Running GraphComponents task");
         auto [graph, fileIdToPathMap] = readInput();
-        auto components = fishnet::graph::BFS::connectedComponents(graph).getAsMap();
+        spdlog::info("Input read completed");
+        const auto components = fishnet::graph::BFS::connectedComponents(graph).getAsMap();
+        spdlog::info("Connected components calculated");
         fishnet::util::BidirectionalMultiHashMap<FileReference, size_t> fileComponentMultiMap = componentToFilesMap(components);
         auto multiFileComponents = std::views::filter(fileComponentMultiMap.inverseKeySet(), [&fileComponentMultiMap](size_t component) {
             return fishnet::util::size(fileComponentMultiMap.get(component)) > 1;
@@ -148,6 +176,11 @@ public:
                 .components = std::vector<size_t>{component}
             });
         }
+
+        spdlog::info("Multi-file components found: {}", workloads.size());
+        mergeSameFileSetWorkloads(workloads);
+        size_t multiFileWorkloadsCount = workloads.size();
+        spdlog::info("Multi-file component workloads created: {}", multiFileWorkloadsCount);
         // Insert single file component workloads, one workload processes all single-file-components of each file
         for(const auto & file:fileComponentMultiMap.keySet()) {
             auto componentsOfFile = fileComponentMultiMap.getTo(file);
@@ -162,14 +195,17 @@ public:
                 .components = fishnet::util::toVector(singleFileComponents)
             });
         }
+        spdlog::info("Single-file component workloads created: {}", workloads.size() - multiFileWorkloadsCount);
         // Transform workloads and export workload results
         writeOutput(std::views::transform(workloads, [&](const auto & workload) {
             return transformToWorkloadResult(workload, fileIdToPathMap, graph, components);
         }));
+        spdlog::info("Output writing completed");
     }
 };
 
 int main(int argc, char * argv[]){
+    spdlog::info("Starting GraphComponents binary");
     CLI::App app{"AfricapolisGraphComponents"};
     std::vector<std::string> binaryGraphFiles;
     std::string configFilename;
@@ -179,6 +215,7 @@ int main(int argc, char * argv[]){
     app.add_option("-c,--config", configFilename, "Path to configuration file for graph components stage of Africapolis workflow")
         ->check(CLI::ExistingFile); // currently not required / used
     CLI11_PARSE(app, argc, argv);
+    spdlog::info("Parsing command line arguments completed");
     std::vector<std::filesystem::path> binGraphPaths;
     for(auto && fileStr : binaryGraphFiles){
         binGraphPaths.push_back(std::filesystem::path(std::move(fileStr)));
