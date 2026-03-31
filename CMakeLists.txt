@@ -14,5 +14,6 @@ endif()
 include(lib/fishnet.cmake)
 include(lib/cli11.cmake)
 include(lib/magic_enum.cmake)
+include(lib/spdlog.cmake)
 # Build sources
 add_subdirectory(src)

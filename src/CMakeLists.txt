@@ -3,7 +3,7 @@ target_link_libraries(AfricapolisGraphConstruction PRIVATE Fishnet::Fishnet Fish
 install(TARGETS AfricapolisGraphConstruction RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
 
 add_executable(AfricapolisGraphComponents GraphComponents.cpp)
-target_link_libraries(AfricapolisGraphComponents PRIVATE Fishnet::Fishnet Fishnet::Workflow CLI11::CLI11)
+target_link_libraries(AfricapolisGraphComponents PRIVATE Fishnet::Fishnet Fishnet::Workflow CLI11::CLI11 spdlog::spdlog)
 install(TARGETS AfricapolisGraphComponents RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
 
 add_executable(AfricapolisSpatialClustering SpatialClustering.cpp)
