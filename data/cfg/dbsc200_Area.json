@@ -1,0 +1,13 @@
+{
+    "clustering": {
+        "mode": "DBSC",
+        "args": {
+            "distance-threshold": 200.0,
+            "min-cluster-size": 5,
+            "beta":2,
+            "attribute-mapper":"AREA"
+        }
+    },
+    "buffer-distance-meters": 200.0,
+    "max-neighbors-per-node": 5
+}
