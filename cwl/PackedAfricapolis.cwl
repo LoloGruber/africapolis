@@ -140,13 +140,13 @@
                 {
                     "type": "File",
                     "doc": "Configuration file for Africapolis workflow",
-                    "id": "#main/config"
+                    "id": "#main/configFile"
                 },
                 {
                     "type": "int",
                     "default": 1,
                     "doc": "Number of partitions created on the input for parallel computation",
-                    "id": "#main/partitions"
+                    "id": "#main/partitionDepth"
                 },
                 {
                     "type": "File",
@@ -181,7 +181,7 @@
                     "run": "#SpatialClustering.cwl",
                     "in": [
                         {
-                            "source": "#main/config",
+                            "source": "#main/configFile",
                             "id": "#main/clustering/config"
                         },
                         {
@@ -206,7 +206,7 @@
                     "run": "#filter.cwl",
                     "in": [
                         {
-                            "source": "#main/config",
+                            "source": "#main/configFile",
                             "id": "#main/filter/config"
                         },
                         {
@@ -226,7 +226,7 @@
                     "run": "#GraphComponents.cwl",
                     "in": [
                         {
-                            "source": "#main/config",
+                            "source": "#main/configFile",
                             "id": "#main/graph_components/config"
                         },
                         {
@@ -243,7 +243,7 @@
                     "run": "#GraphGeneration.cwl",
                     "in": [
                         {
-                            "source": "#main/config",
+                            "source": "#main/configFile",
                             "id": "#main/graph_generation/config"
                         },
                         {
@@ -283,12 +283,12 @@
                     "run": "#split.cwl",
                     "in": [
                         {
-                            "source": "#main/shapefile",
-                            "id": "#main/split/shapefile"
+                            "source": "#main/partitionDepth",
+                            "id": "#main/split/depth"
                         },
                         {
-                            "source": "#main/partitions",
-                            "id": "#main/split/splits"
+                            "source": "#main/shapefile",
+                            "id": "#main/split/shapefile"
                         }
                     ],
                     "out": [
@@ -375,13 +375,18 @@
             ],
             "hints": [
                 {
-                    "dockerPull": "logru/africapolis:1.1.0",
+                    "dockerPull": "logru/africapolis:latest",
                     "class": "DockerRequirement"
                 }
             ],
             "requirements": [
                 {
                     "class": "InlineJavascriptRequirement"
+                },
+                {
+                    "coresMin": 1,
+                    "ramMin": 1000,
+                    "class": "ResourceRequirement"
                 }
             ],
             "inputs": [
@@ -481,13 +486,18 @@
             ],
             "hints": [
                 {
-                    "dockerPull": "logru/fishnet-apps:1.1.0",
+                    "dockerPull": "logru/fishnet-apps:1.2.1",
                     "class": "DockerRequirement"
                 }
             ],
             "requirements": [
                 {
                     "class": "InlineJavascriptRequirement"
+                },
+                {
+                    "coresMin": 1,
+                    "ramMin": 250,
+                    "class": "ResourceRequirement"
                 }
             ],
             "inputs": [
@@ -585,13 +595,18 @@
             ],
             "hints": [
                 {
-                    "dockerPull": "logru/fishnet-apps:1.1.0",
+                    "dockerPull": "logru/fishnet-apps:1.2.0",
                     "class": "DockerRequirement"
                 }
             ],
             "requirements": [
                 {
                     "class": "InlineJavascriptRequirement"
+                },
+                {
+                    "coresMin": 1,
+                    "ramMin": 1000,
+                    "class": "ResourceRequirement"
                 }
             ],
             "inputs": [
@@ -696,16 +711,28 @@
             ],
             "hints": [
                 {
-                    "dockerPull": "logru/fishnet-apps:1.1.0",
+                    "dockerPull": "logru/fishnet-apps:1.2.0",
                     "class": "DockerRequirement"
                 }
             ],
             "requirements": [
                 {
                     "class": "InlineJavascriptRequirement"
+                },
+                {
+                    "coresMin": 1,
+                    "ramMin": 1000,
+                    "class": "ResourceRequirement"
                 }
             ],
             "inputs": [
+                {
+                    "type": "int",
+                    "inputBinding": {
+                        "prefix": "--depth"
+                    },
+                    "id": "#split.cwl/depth"
+                },
                 {
                     "type": "string",
                     "default": "./",
@@ -743,13 +770,6 @@
                         "prefix": "--input"
                     },
                     "id": "#split.cwl/shapefile"
-                },
-                {
-                    "type": "int",
-                    "inputBinding": {
-                        "prefix": "-s"
-                    },
-                    "id": "#split.cwl/splits"
                 },
                 {
                     "type": "int",
@@ -942,8 +962,15 @@
             ],
             "hints": [
                 {
-                    "dockerPull": "logru/africapolis:1.1.0",
+                    "dockerPull": "logru/africapolis:latest",
                     "class": "DockerRequirement"
+                }
+            ],
+            "requirements": [
+                {
+                    "coresMin": 1,
+                    "ramMin": 1000,
+                    "class": "ResourceRequirement"
                 }
             ],
             "inputs": [
@@ -1140,13 +1167,18 @@
             ],
             "hints": [
                 {
-                    "dockerPull": "logru/africapolis:1.1.0",
+                    "dockerPull": "logru/africapolis:latest",
                     "class": "DockerRequirement"
                 }
             ],
             "requirements": [
                 {
                     "class": "InlineJavascriptRequirement"
+                },
+                {
+                    "coresMin": 1,
+                    "ramMin": 1000,
+                    "class": "ResourceRequirement"
                 }
             ],
             "inputs": [
@@ -1504,13 +1536,18 @@
             ],
             "hints": [
                 {
-                    "dockerPull": "logru/africapolis:1.1.0",
+                    "dockerPull": "logru/africapolis:latest",
                     "class": "DockerRequirement"
                 }
             ],
             "requirements": [
                 {
                     "class": "InlineJavascriptRequirement"
+                },
+                {
+                    "coresMin": 1,
+                    "ramMin": 1000,
+                    "class": "ResourceRequirement"
                 }
             ],
             "inputs": [

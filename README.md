@@ -8,13 +8,13 @@ All software dependencies are capsulated in a custom [docker image](https://hub.
 
  The following example shows how to run the workflow with `cwltool`, providing the workflow's main definition file ([_Africapolis.cwl_](cwl/Africapolis.cwl)) and initializing the workflow's parameters. 
 ```
-cwltool Africapolis.cwl --shapefile <File.shp> --configFile <Config.Json> --partitions <UnsignedInt>
+cwltool Africapolis.cwl --shapefile <File.shp> --configFile <Config.Json> --partitionDepth <UnsignedInt>
 ``` 
 | Parameter| Info |
 |---|---|
 | `--shapefile` | Path to vector file (.shp) containing the settlement polygons
 | `--configFile` | Path to the workflow's configuration file
-| `--partitions` | Number of vertical / horizontal splits applied to the input file for workload distribution
+| `--partitionDepth` | Depth of quadrant splitting of the input file.
 
 In the configuration file of the workflow the settlement graph construction and clustering can be customized according to local peculiarities. Currently, three cluster modes are supported:
 | Algorithm | Info |

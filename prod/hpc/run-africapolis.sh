@@ -15,7 +15,7 @@ if [ ! -d "$WORKFLOW_DIR" ]; then
     source venv/bin/activate
     pip install toil[cwl]
     echo "Installation complete. You can now run the workflow using the following command:"
-    echo "$0 --input <INPUT_FILE> --config <CONFIG_FILE> --partitions <PARTITIONS>"
+    echo "$0 --input <INPUT_FILE> --config <CONFIG_FILE> --partitionDepth <DEPTH>"
     exit 0
 fi
 # Load modules
@@ -35,20 +35,20 @@ while [[ $# -gt 0 ]]; do
             CONFIG_FILE="$2"
             shift 2
             ;;
-        --partitions)
-            PARTITIONS="$2"
+        --partitionDepth)
+            DEPTH="$2"
             shift 2
             ;;
         *)
             echo "Error: Unknown option $1"
-            echo "Usage: $0 --input <INPUT_FILE> --config <CONFIG_FILE> --partitions <PARTITIONS>"
+            echo "Usage: $0 --input <INPUT_FILE> --config <CONFIG_FILE> --partitionDepth <DEPTH>"
             exit 1
             ;;
     esac
 done
 # Validate input parameters
-if [ -z "$INPUT_FILE" ] || [ -z "$CONFIG_FILE" ] || [ -z "$PARTITIONS" ]; then
-    echo "Error: Missing required parameters. Usage: $0 --input <INPUT_FILE> --config <CONFIG_FILE> --partitions <PARTITIONS>"
+if [ -z "$INPUT_FILE" ] || [ -z "$CONFIG_FILE" ] || [ -z "$DEPTH" ]; then
+    echo "Error: Missing required parameters. Usage: $0 --input <INPUT_FILE> --config <CONFIG_FILE> --partitionDepth <DEPTH>"
     exit 1
 fi
 # Convert to absolute paths
@@ -60,7 +60,7 @@ WORKFLOW_FILE="$WORKFLOW_DIR/cwl/Africapolis.cwl"
 OUTPUT_DIR="$WORKFLOW_DIR/output/$EXPERIMENT_NAME"
 mkdir -p "$OUTPUT_DIR"
 cd "$OUTPUT_DIR"
-toil-cwl-runner --singularity --batchSystem slurm  $WORKFLOW_FILE --shapefile "$INPUT_FILE" --configFile "$CONFIG_FILE" --partitions "$PARTITIONS"
+toil-cwl-runner --singularity --batchSystem slurm  $WORKFLOW_FILE --shapefile "$INPUT_FILE" --configFile "$CONFIG_FILE" --partitionDepth "$DEPTH"
 if [ $? -eq 0 ]; then
     echo "Workflow execution complete. Output files are located in $OUTPUT_DIR"
 fi

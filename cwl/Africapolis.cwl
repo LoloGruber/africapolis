@@ -20,7 +20,7 @@ inputs:
     type: File
     # format: JSON
     doc: "Configuration file for Africapolis workflow"
-  partitions:
+  partitionDepth:
     type: int
     default: 1
     doc: "Number of partitions created on the input for parallel computation"
@@ -40,7 +40,7 @@ steps:
     run: fishnet/split.cwl
     in:
       shapefile: shapefile
-      splits: partitions
+      depth: partitionDepth
     out: [split_shapefiles]
   filter:
     run: fishnet/filter.cwl
