@@ -3,7 +3,7 @@ class: CommandLineTool
 baseCommand: [FishnetShapefileSplitter]
 hints:
   DockerRequirement:
-    dockerPull: logru/fishnet-apps:1.1.0
+    dockerPull: logru/fishnet-apps:1.2.0
 requirements:
   InlineJavascriptRequirement: {}
   ResourceRequirement:
@@ -22,10 +22,10 @@ inputs:
     inputBinding:
         prefix: -o
     doc: "Output directory"
-  splits:
+  depth:
     type: int
     inputBinding:
-        prefix: -s
+        prefix: --depth
   xOffset:
     type: int
     default: 0

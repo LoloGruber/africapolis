@@ -3,7 +3,7 @@ class: CommandLineTool
 baseCommand: [FishnetShapefileMerger]
 hints:
   DockerRequirement:
-    dockerPull: logru/fishnet-apps:1.1.0
+    dockerPull: logru/fishnet-apps:1.2.0
 requirements:
   InlineJavascriptRequirement: {}
   ResourceRequirement:
