@@ -11,5 +11,5 @@ target_link_libraries(AfricapolisSpatialClustering PRIVATE Fishnet::Fishnet Fish
 install(TARGETS AfricapolisSpatialClustering RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
 
 add_executable(AfricapolisPolygonOutline PolygonOutline.cpp)
-target_link_libraries(AfricapolisPolygonOutline PRIVATE Fishnet::Fishnet CLI11::CLI11)
+target_link_libraries(AfricapolisPolygonOutline PRIVATE Fishnet::Fishnet Fishnet::Workflow CLI11::CLI11)
 install(TARGETS AfricapolisPolygonOutline RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)

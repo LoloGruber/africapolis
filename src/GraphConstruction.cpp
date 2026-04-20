@@ -65,7 +65,7 @@ private:
 public:
     GraphConstruction(const fishnet::Shapefile & primaryInput,
                     const fishnet::util::range_of<fishnet::Shapefile> auto & secondaryInputs,
-                    GraphConstructionConfig && config): config(std::move(config)) 
+                    GraphConstructionConfig && config):Task("GraphConstruction"), config(std::move(config)) 
     {
         // Read primary input and get distance function
         auto reader = GraphConstructionShapefileReader<S>{};
@@ -83,7 +83,7 @@ public:
         }
     }
 
-    void run() override{
+    void run() {
         auto graph = fishnet::graph::GraphFactory::UndirectedGraph(
             WritingBinarySettlementGraphAdjacency<SettlementShape<S>>(
                 this->graphBinaryOutputPath,

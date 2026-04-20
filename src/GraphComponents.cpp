@@ -1,5 +1,3 @@
-#include <future>
-#include <spdlog/spdlog.h>
 #include <CLI/CLI.hpp>
 #include <fishnet/Graph.hpp>
 #include <fishnet/Task.hpp>
@@ -156,14 +154,14 @@ private:
     }
 
 public: 
-    GraphComponents(GraphComponentsConfig && config, std::vector<std::filesystem::path> binGraphFiles): config(std::move(config)), binGraphFiles(std::move(binGraphFiles)){}
+    GraphComponents(GraphComponentsConfig && config, std::vector<std::filesystem::path> binGraphFiles):Task("GraphComponents"), config(std::move(config)), binGraphFiles(std::move(binGraphFiles)){}
 
-    void run() override{
-        spdlog::info("Running GraphComponents task");
+    void run() {
+        spdlog::set_level(spdlog::level::debug);
         auto [graph, fileIdToPathMap] = readInput();
-        spdlog::info("Input read completed");
+        spdlog::debug("Input read completed");
         const auto components = fishnet::graph::BFS::connectedComponents(graph).getAsMap();
-        spdlog::info("Connected components calculated");
+        spdlog::debug("Connected components calculated");
         fishnet::util::BidirectionalMultiHashMap<FileReference, size_t> fileComponentMultiMap = componentToFilesMap(components);
         auto multiFileComponents = std::views::filter(fileComponentMultiMap.inverseKeySet(), [&fileComponentMultiMap](size_t component) {
             return fishnet::util::size(fileComponentMultiMap.get(component)) > 1;
@@ -177,10 +175,10 @@ public:
             });
         }
 
-        spdlog::info("Multi-file components found: {}", workloads.size());
+        spdlog::debug("Multi-file components found: {}", workloads.size());
         mergeSameFileSetWorkloads(workloads);
         size_t multiFileWorkloadsCount = workloads.size();
-        spdlog::info("Multi-file component workloads created: {}", multiFileWorkloadsCount);
+        spdlog::debug("Multi-file component workloads created: {}", multiFileWorkloadsCount);
         // Insert single file component workloads, one workload processes all single-file-components of each file
         for(const auto & file:fileComponentMultiMap.keySet()) {
             auto componentsOfFile = fileComponentMultiMap.getTo(file);
@@ -195,12 +193,11 @@ public:
                 .components = fishnet::util::toVector(singleFileComponents)
             });
         }
-        spdlog::info("Single-file component workloads created: {}", workloads.size() - multiFileWorkloadsCount);
+        spdlog::debug("Single-file component workloads created: {}", workloads.size() - multiFileWorkloadsCount);
         // Transform workloads and export workload results
         writeOutput(std::views::transform(workloads, [&](const auto & workload) {
             return transformToWorkloadResult(workload, fileIdToPathMap, graph, components);
         }));
-        spdlog::info("Output writing completed");
     }
 };
 

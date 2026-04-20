@@ -123,10 +123,10 @@ public:
         std::vector<std::string> && inputFilenames,
         const std::filesystem::path & graphFile,
         std::string && outputStem
-    ):config(config), inputFilenames(std::move(inputFilenames)), graphFile(graphFile), outputStem(std::move(outputStem)){}
+    ):Task("Clustering"), config(config), inputFilenames(std::move(inputFilenames)), graphFile(graphFile), outputStem(std::move(outputStem)){}
     
 
-    void run() override {
+    void run() {
         // Load shapes and settlement graph
         using ShapeType = fishnet::geometry::Polygon<double>;
         using SettlementType = SettlementShape<ShapeType>;
