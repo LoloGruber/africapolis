@@ -25,10 +25,6 @@ inputs:
         valueFrom: $(self+".shp")
     doc: "Output filename for result (Shapefile)"  
 outputs:
-  standardOut:
-    type: stdout
-  errorOut:
-    type: stderr
   mergedOutput:
     type: File
     secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]

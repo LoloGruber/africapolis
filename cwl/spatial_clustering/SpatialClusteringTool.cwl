@@ -35,10 +35,6 @@ inputs:
         prefix: --outputStem 
     doc: "Output filename storing the merged polygons"     
 outputs:
-  standardOut:
-    type: stdout
-  errorOut:
-    type: stderr
   clusteredOutput:
     type: File
     secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]

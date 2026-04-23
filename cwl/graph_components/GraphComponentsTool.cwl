@@ -29,9 +29,5 @@ outputs:
     outputBinding:
       glob: "*.bin"
     doc: "Output file containing the binary representation of the graph components, to be used as input for the clustering step"
-  standardOut:
-    type: stdout
-  errorOut:
-    type: stderr
 stdout: COMPONENTS_stdout.log
 stderr: COMPONENTS_stderr.log

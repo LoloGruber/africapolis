@@ -39,10 +39,6 @@ inputs:
         prefix: -y
     doc: "Y offset for the naming of the output tiles"
 outputs:
-  standardOut:
-    type: stdout
-  errorOut:
-    type: stderr
   split_shapefiles:
     type: File[]
     # format: SHP

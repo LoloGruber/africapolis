@@ -23,10 +23,6 @@ inputs:
     inputBinding:
       prefix: --config
 outputs:
-  standardOut:
-    type: stdout
-  errorOut:
-    type: stderr
   filtered_shapefile:
     type: File
     secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]

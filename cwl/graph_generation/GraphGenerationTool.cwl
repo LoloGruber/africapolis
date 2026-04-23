@@ -30,10 +30,6 @@ inputs:
         prefix: -c
     doc: "Path to configuration for neighbours task. Contains graph database credentials, neighbouring criteria, ..."
 outputs:
-    standardOut:
-        type: stdout
-    errorOut:
-        type: stderr
     graphBinary:
         type: File
         outputBinding:

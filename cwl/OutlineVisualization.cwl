@@ -30,9 +30,5 @@ outputs:
     outputBinding:
       glob: "$(inputs.shapefile.nameroot)*.shp"
     doc: "Output shapefile with polygon outlines"
-  standardOut:
-    type: stdout
-  errorOut:
-    type: stderr
 stdout: OUTLINE_$(inputs.shapefile.nameroot)_stdout.log
 stderr: OUTLINE_$(inputs.shapefile.nameroot)_stderr.log
