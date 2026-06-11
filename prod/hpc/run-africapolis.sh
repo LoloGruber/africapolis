@@ -1,7 +1,21 @@
 #!/bin/bash
 # Installation
+REINSTALL=false
 WORKFLOW_DIR="$HOME/africapolis-workflow"
-if [ ! -d "$WORKFLOW_DIR" ]; then
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --update)
+            REINSTALL=true
+            shift
+            ;;
+        *)
+            break
+            ;;
+    esac
+done
+
+if [ ! -d "$WORKFLOW_DIR" ] || [ "$REINSTALL" = true ]; then
+    rm -rf "$WORKFLOW_DIR"
     mkdir -p "$WORKFLOW_DIR"
     cd $TMPDIR
     rm -rf africapolis
