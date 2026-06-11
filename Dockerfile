@@ -1,6 +1,7 @@
 FROM logru/fishnet-deps:latest AS build
-COPY . /africapolis
-WORKDIR /africapolis
+COPY ./src /africapolis/src
+COPY ./lib /africapolis/lib
+COPY CMakeLists.txt /africapolis/CMakeLists.txt
 RUN mkdir -p /africapolis/build
 WORKDIR /africapolis/build
 RUN cmake -DCMAKE_BUILD_TYPE=Release -DFISHNET_TEST=OFF -DFISHNET_TEST_LIB=OFF -DFISHNET_APPS=ON -DFISHNET_EXAMPLES=OFF .. 

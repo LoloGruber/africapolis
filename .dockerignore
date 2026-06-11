@@ -3,6 +3,7 @@
 build/
 build-release/
 cmake-build-debug/
+cwl/
 tmp/
 doc/
 data/ 
@@ -11,4 +12,5 @@ LICENSE
 .gitignore
 .git/
 install.sh
+update.sh
 prod/
