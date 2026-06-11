@@ -77,7 +77,7 @@ Setup a python environment and install dependencies first:
 ```py
 python -m venv .venv
 source .venv/bin/activate
-python -m pip install -r requirements.txt
+python -m pip install -r python/requirements.txt
 ```
 
 ### Installing CWL-Runner
