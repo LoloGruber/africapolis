@@ -1,0 +1,11 @@
+{
+    "shapefile":{
+        "class": "File",
+        "path": "/home/lolo/Projects/africapolis/data/input/Kahama_BuildingFootprintsOverture.shp"
+    },
+    "configFile":{
+        "class": "File",
+        "path": "/home/lolo/Projects/africapolis/data/cfg/dbscan200.json"
+    },
+    "partitionDepth": 2
+}
