@@ -67,13 +67,23 @@ toil-cwl-runner --singularity --batchSystem slurm  ~/africapolis-workflow/cwl/Af
 ```
 
 # Development
+### Binaries (C++)
 The required binaries of *Africapolis* can be manually install on the system. This can be achieved with the [install](install.sh) script. Make sure that the install prefix location (*$INSTALL_PREFIX*) is referenced in *PATH* (e.g. *usr/local/bin*). 
 ```shell
 ./install.sh
 ```
-Additionally, a [CWL Runner](https://www.commonwl.org/implementations/) must be installed to execute the workflow. The reference executor [cwltool](https://cwltool.readthedocs.io/en/latest/cli.html#cwltool) is recommended and can be installed as follows:
+### Python Scripts
+Setup a python environment and install dependencies first:
+```py
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+```
+
+### Installing CWL-Runner
+Additionally, a [CWL Runner](https://www.commonwl.org/implementations/) must be installed to execute the workflow. The reference executor [cwltool](https://cwltool.readthedocs.io/en/latest/cli.html#cwltool) is recommended and can be installed in the python virtual environment as follows:
 ```shell
-sudo apt-get install cwltool
+python -m pip install cwltool
 ```
 ### Running the Workflow
 ```

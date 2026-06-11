@@ -3,5 +3,6 @@
 /build
 /build-release
 /.idea
+/.venv
 /cmake-build-debug
 /tmp
