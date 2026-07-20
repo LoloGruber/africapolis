@@ -20,6 +20,7 @@ inputs:
   additionalInput:
     type: File[]
     secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
+    default: []
     # format: SHP
     inputBinding:
         prefix: -a

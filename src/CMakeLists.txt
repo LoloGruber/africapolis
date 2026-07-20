@@ -1,5 +1,5 @@
 add_executable(AfricapolisGraphConstruction GraphConstruction.cpp)
-target_link_libraries(AfricapolisGraphConstruction PRIVATE Fishnet::Fishnet Fishnet::Workflow::Settlement CLI11::CLI11)
+target_link_libraries(AfricapolisGraphConstruction PRIVATE Fishnet::Fishnet Fishnet::Workflow::Settlement CLI11::CLI11 magic_enum::magic_enum)
 install(TARGETS AfricapolisGraphConstruction RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
 
 add_executable(AfricapolisGraphComponents GraphComponents.cpp)
@@ -13,3 +13,7 @@ install(TARGETS AfricapolisSpatialClustering RUNTIME DESTINATION ${CMAKE_INSTALL
 add_executable(AfricapolisPolygonOutline PolygonOutline.cpp)
 target_link_libraries(AfricapolisPolygonOutline PRIVATE Fishnet::Fishnet Fishnet::Workflow CLI11::CLI11)
 install(TARGETS AfricapolisPolygonOutline RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
+
+add_executable(AfricapolisEdgeVisualization EdgeVisualization.cpp)
+target_link_libraries(AfricapolisEdgeVisualization PRIVATE Fishnet::Fishnet Fishnet::Workflow CLI11::CLI11)
+install(TARGETS AfricapolisEdgeVisualization RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
