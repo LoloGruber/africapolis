@@ -7,10 +7,9 @@
         }
     },
     "graph-construction": {
-        "mode": "BUFFER_SWEEP",
+        "mode": "DELAUNAY",
         "args": {
-            "distance-threshold": 200.0,
-            "max-neighbors-per-node": 5
+            "distance-threshold": 200.0
         }
     }
 }

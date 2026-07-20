@@ -8,6 +8,11 @@
             "attribute-mapper":"AREA"
         }
     },
-    "buffer-distance-meters": 200.0,
-    "max-neighbors-per-node": 5
+    "graph-construction": {
+        "mode": "BUFFER_SWEEP",
+        "args": {
+            "distance-threshold": 200.0,
+            "max-neighbors-per-node": 5
+        }
+    }
 }
