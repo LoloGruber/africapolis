@@ -8,11 +8,13 @@
 #include <fishnet/VectorIO.hpp>
 #include "BinarySettlementGraphAdjacency.hpp"
 #include "ObservableShapefileReader.hpp"
+#include "fishnet/PathHelper.h"
 
 
 class EdgeVisualization: public Task {
-    std::filesystem::path geometryFile;
+    std::vector<std::string> geometryFiles;
     std::filesystem::path graphFile;
+    std::string outputStem;
 
     static std::optional<fishnet::geometry::SimplePolygon<double>> visualizeEdge(const fishnet::geometry::IPolygon auto & from, const fishnet::geometry::IPolygon auto & to) noexcept{
         auto [l,r] = fishnet::geometry::closestPoints(from,to);
@@ -42,7 +44,7 @@ class EdgeVisualization: public Task {
 
 
 public:
-    EdgeVisualization(std::filesystem::path geometryFile, std::filesystem::path graphFile):Task("EdgeVisualization"), geometryFile(std::move(geometryFile)), graphFile(std::move(graphFile)){}
+    EdgeVisualization(const std::vector<std::string> & geometryFiles, std::filesystem::path graphFile, const std::string & outputStem):Task("EdgeVisualization"), geometryFiles(geometryFiles), graphFile(std::move(graphFile)), outputStem(outputStem){}
 
     void run() {
         using Shapetype = fishnet::geometry::Polygon<double>;
@@ -50,7 +52,10 @@ public:
         using EdgeGeometryType = fishnet::geometry::SimplePolygon<double>;
         OGRSpatialReference spatialRef;
         const auto reader = ObservableShapefileReader<Shapetype>([&spatialRef](const fishnet::VectorLayer<Shapetype> & layer){spatialRef = layer.getSpatialReference();});
-        auto nodes = SettlementType::read<fishnet::Shapefile>(fishnet::Shapefile(geometryFile), reader, HashingFileReferenceMapper{});
+        auto nodes = SettlementType::read<fishnet::Shapefile>(
+            geometryFiles | std::views::transform([](const std::string & file) { return fishnet::Shapefile(fishnet::util::PathHelper::absoluteCanonical(file)); }),
+            reader,
+            HashingFileReferenceMapper{});
         auto graph = fishnet::graph::GraphFactory::UndirectedGraph(
             ReadingBinarySettlementGraphAdjacency<SettlementType>(
                 graphFile,
@@ -66,17 +71,27 @@ public:
                 spdlog::warn("Failed to visualize edge between settlements '{}' and '{}'. Skipping edge.", edge.getFrom().key(), edge.getTo().key());
             }
         }
-        fishnet::VectorIO::overwrite(outputLayer,fishnet::Shapefile(geometryFile.stem().string()+"_edges.shp"));
+        fishnet::VectorIO::overwrite(outputLayer,fishnet::Shapefile(outputStem+"_edges.shp"));
     }
 };
 
 int main(int argc, char *argv[]){
     CLI::App app{"EdgeVisualization"};
-    std::string geometryFile;
+    std::vector<std::string> geometryFiles;
     std::string graphFile;
-    app.add_option("-i,--input",geometryFile,"Input shapefile storing the settlements")->required()->check(CLI::ExistingFile);
+    std::string outputStem;
+    app.add_option("-i,--inputs",geometryFiles,"Shapefiles storing the polygons with id")->required()->each([](const std::string & str){
+        try{
+            auto file = fishnet::Shapefile(str);
+            if(not file.exists())
+                throw std::invalid_argument("File "+ file.getPath().string() + " does not exist");
+        }catch(std::invalid_argument & error){
+            throw CLI::ValidationError(error.what());
+        }
+    });
     app.add_option("-g,--graph",graphFile,"Input binary file storing the settlement graph adjacency")->required()->check(CLI::ExistingFile);
+    app.add_option("-o", outputStem, "Output filename stem for storing the clustered shapefile");
     CLI11_PARSE(app, argc, argv);
-    EdgeVisualization task(fishnet::util::PathHelper::absoluteCanonical(geometryFile), fishnet::util::PathHelper::absoluteCanonical(graphFile));
+    EdgeVisualization task(geometryFiles, fishnet::util::PathHelper::absoluteCanonical(graphFile), outputStem);
     task.run();
 }
