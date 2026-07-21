@@ -29,12 +29,17 @@ outputs:
     type: File
     secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
     # format: SHP
-    outputSource: visualize/outputShapefile
-  multi_polygons:
+    outputSource: mergeConcaveHulls/mergedOutput
+  settlements:
     type: File
     secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
     # format: SHP
-    outputSource: merge/mergedOutput
+    outputSource: mergeMultiPolygons/mergedOutput
+  edges:
+    type: File
+    secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
+    # format: SHP
+    outputSource: mergeEdges/mergedOutput
 steps:
   split:
     run: fishnet/split.cwl
@@ -72,8 +77,15 @@ steps:
       files: filter/filtered_shapefile
     scatter: [workload]
     scatterMethod: dotproduct
-    out: [clusteredOutput]
-  merge:
+    out: [clusteredOutput, clusterEdges]
+  concaveHull:
+    run: OutlineVisualization.cwl
+    in:
+      shapefile: clustering/clusteredOutput
+    scatter: [shapefile]
+    scatterMethod: dotproduct
+    out: [outputShapefile]
+  mergeMultiPolygons:
     run: fishnet/merge.cwl
     in:
       shpFiles: clustering/clusteredOutput
@@ -81,11 +93,22 @@ steps:
         source: shapefile
         valueFrom: $("./"+self.nameroot+"_Africapolis")
     out: [mergedOutput]
-  visualize:
-    run: OutlineVisualization.cwl
+  mergeEdges:
+    run: fishnet/merge.cwl
     in:
-      shapefile: merge/mergedOutput
-    out: [outputShapefile]
+      shpFiles: clustering/clusterEdges
+      outputPath:
+        source: shapefile
+        valueFrom: $("./"+self.nameroot+"_Africapolis_edges")
+    out: [mergedOutput]
+  mergeConcaveHulls:
+    run: fishnet/merge.cwl
+    in:
+      shpFiles: concaveHull/outputShapefile
+      outputPath:
+        source: shapefile
+        valueFrom: $("./"+self.nameroot+"_Africapolis_concave_hull")
+    out: [mergedOutput]
 
 
   
