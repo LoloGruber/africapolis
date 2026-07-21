@@ -24,6 +24,11 @@ outputs:
     secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
     # format: SHP
     outputSource: clustering/clusteredOutput
+  clusterEdges:
+    type: File
+    secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
+    # format: SHP
+    outputSource: edgeVisualization/edgeShapefile
 steps:
     prepare_cluster_workload:
         run:
@@ -60,6 +65,20 @@ steps:
             workload: workload
             files: files
         out: [clusterWorkload]
+    edgeVisualization:
+      run: EdgeVisualization.cwl
+      in:
+        clusterWorkload: prepare_cluster_workload/clusterWorkload
+        geometryFiles:
+          source: prepare_cluster_workload/clusterWorkload
+          valueFrom: $(inputs.clusterWorkload.shpFiles)
+        graphFile: 
+          source: prepare_cluster_workload/clusterWorkload
+          valueFrom: $(inputs.clusterWorkload.graphBinary)
+        outputStem:
+          source: prepare_cluster_workload/clusterWorkload
+          valueFrom: $("Edges_"+ inputs.clusterWorkload.graphBinary.nameroot)
+      out: [edgeShapefile]
     clustering:
       run: SpatialClusteringTool.cwl
       in:
@@ -73,5 +92,5 @@ steps:
           valueFrom: $(inputs.clusterWorkload.shpFiles)
         outputStem:
           source: prepare_cluster_workload/clusterWorkload
-          valueFrom: $("Clustered_"+ inputs.clusterWorkload.graphBinary.basename)
+          valueFrom: $("Clustered_"+ inputs.clusterWorkload.graphBinary.nameroot)
       out: [clusteredOutput]

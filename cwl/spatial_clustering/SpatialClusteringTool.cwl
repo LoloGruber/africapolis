@@ -42,5 +42,5 @@ outputs:
     outputBinding:
         glob: "$(inputs.outputStem).shp"
     doc: "Clustering output shapefile"
-stdout: CLUSTER_$(inputs.graphBinary.basename)_stdout.log
-stderr: CLUSTER_$(inputs.graphBinary.basename)_stderr.log
+stdout: CLUSTER_$(inputs.graphBinary.nameroot)_stdout.log
+stderr: CLUSTER_$(inputs.graphBinary.nameroot)_stderr.log
