@@ -1,9 +1,8 @@
 {
     "clustering": {
-        "mode": "DBSCAN",
+        "mode": "BFS",
         "args": {
-            "distance-threshold": 200.0,
-            "min-cluster-size": 3
+            "distance-threshold": 200.0
         }
     },
     "graph-construction": {
