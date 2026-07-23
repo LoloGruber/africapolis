@@ -38,6 +38,7 @@ class EdgeVisualization: public Task {
         try{
             return std::make_optional<fishnet::geometry::SimplePolygon<double>>(vectors);
         }catch(fishnet::geometry::InvalidGeometryException & exc){
+            spdlog::warn("Failed to visualize edge between settlement points '{}' and '{}'. Skipping edge.", l.toString(),r.toString());
             return std::nullopt;
         }
     }
@@ -67,8 +68,6 @@ public:
             auto optEdgePolygon = visualizeEdge(edge.getFrom(), edge.getTo());
             if(optEdgePolygon.has_value()){
                 outputLayer.addFeature(fishnet::Feature<EdgeGeometryType>(optEdgePolygon.value()));
-            }else{
-                spdlog::warn("Failed to visualize edge between settlements '{}' and '{}'. Skipping edge.", edge.getFrom().key(), edge.getTo().key());
             }
         }
         fishnet::VectorIO::overwrite(outputLayer,fishnet::Shapefile(outputStem+"_edges.shp"));
