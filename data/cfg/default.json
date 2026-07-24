@@ -1,0 +1,25 @@
+{
+    "clustering": {
+        "mode": "DBSCAN",
+        "args": {
+            "distance-threshold": 200.0,
+            "min-cluster-size": 3
+        }
+    },
+    "graph-construction": {
+        "mode": "DELAUNAY",
+        "args": {
+            "distance-threshold": 200.0
+        }
+    },
+    "filters": [
+        {
+            "type": "ApproxAreaFilter",
+            "required-area": 1000.0
+
+        },
+        {
+            "type": "InsidePolygonFilter"
+        }
+    ]
+}
