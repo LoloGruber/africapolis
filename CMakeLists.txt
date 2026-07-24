@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(africapolis_workflow VERSION 1.3.1 LANGUAGES CXX)
+project(africapolis_workflow VERSION 1.4.0 LANGUAGES CXX)
 
 # Variables
 set(CMAKE_CXX_STANDARD 23)

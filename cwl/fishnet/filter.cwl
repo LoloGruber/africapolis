@@ -3,7 +3,7 @@ class: CommandLineTool
 baseCommand: [FishnetShapefilePreprocessor]
 hints:
   DockerRequirement:
-    dockerPull: logru/fishnet-apps:1.2.1
+    dockerPull: logru/fishnet-apps:1.3.1
 requirements:
   InlineJavascriptRequirement: {}
   ResourceRequirement:
@@ -22,6 +22,12 @@ inputs:
     doc: "Configuration file for filter process"
     inputBinding:
       prefix: --config
+  skipFilter:
+    type: boolean
+    default: false
+    doc: "Skip the filtering process and return the input shapefile with Fishnet IDs as output"
+    inputBinding:
+      prefix: --no-filter
 outputs:
   filtered_shapefile:
     type: File

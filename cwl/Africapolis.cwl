@@ -25,12 +25,12 @@ inputs:
     default: 1
     doc: "Number of partitions created on the input for parallel computation"
 outputs:
-  concave_hull:
+  africapolis:
     type: File
     secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
     # format: SHP
     outputSource: mergeConcaveHulls/mergedOutput
-  settlements:
+  multi_polygons:
     type: File
     secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
     # format: SHP
@@ -52,6 +52,8 @@ steps:
     in:
       shapefile: split/split_shapefiles
       config: configFile
+      skipFilter: 
+        valueFrom: $(true)
     scatter: [shapefile]
     out: [filtered_shapefile]
   graph_generation:
@@ -85,13 +87,20 @@ steps:
     scatter: [shapefile]
     scatterMethod: dotproduct
     out: [outputShapefile]
+  postFilter:
+    run: fishnet/filter.cwl
+    in:
+      shapefile: concaveHull/outputShapefile
+      config: configFile
+    scatter: [shapefile]
+    out: [filtered_shapefile]
   mergeMultiPolygons:
     run: fishnet/merge.cwl
     in:
       shpFiles: clustering/clusteredOutput
       outputPath:
         source: shapefile
-        valueFrom: $("./"+self.nameroot+"_Africapolis")
+        valueFrom: $("./"+self.nameroot+"_Africapolis_MultiPolygons")
     out: [mergedOutput]
   mergeEdges:
     run: fishnet/merge.cwl
@@ -99,15 +108,15 @@ steps:
       shpFiles: clustering/clusterEdges
       outputPath:
         source: shapefile
-        valueFrom: $("./"+self.nameroot+"_Africapolis_edges")
+        valueFrom: $("./"+self.nameroot+"_Africapolis_Edges")
     out: [mergedOutput]
   mergeConcaveHulls:
     run: fishnet/merge.cwl
     in:
-      shpFiles: concaveHull/outputShapefile
+      shpFiles: postFilter/filtered_shapefile
       outputPath:
         source: shapefile
-        valueFrom: $("./"+self.nameroot+"_Africapolis_concave_hull")
+        valueFrom: $("./"+self.nameroot+"_Africapolis")
     out: [mergedOutput]
 
 
