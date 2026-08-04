@@ -1,5 +1,5 @@
 # Africapolis Workflow
-The *Africapolis* Workflow clusters and visualizes urban areas from individual building footprint polygons. It is orchestrated with the [Common Workflow Language (CWL)](https://www.commonwl.org/user_guide/), with each stage being a C++ command line program wrapped with CWL. The implementation depends on the [*Fishnet*](https://gitlab2.informatik.uni-wuerzburg.de/descartes/sos/fishnet) framework.
+The *Africapolis* Workflow clusters and visualizes urban areas from individual building footprint polygons. It is orchestrated with the [Common Workflow Language (CWL)](https://www.commonwl.org/user_guide/), with each stage being a C++ command line program wrapped with CWL. The implementation depends on the [*Fishnet*](https://github.com/LoloGruber/fishnet.git) framework.
 
 ![](doc/Kahama_Output.png)
 
@@ -16,25 +16,46 @@ cwltool Africapolis.cwl --shapefile <File.shp> --configFile <Config.Json> --part
 | `--configFile` | Path to the workflow's configuration file
 | `--partitionDepth` | Depth of quadrant splitting of the input file.
 
-In the configuration file of the workflow the settlement graph construction and clustering can be customized according to local peculiarities. Currently, three cluster modes are supported:
+# Configuration
+In the configuration file of the workflow the settlement graph construction and clustering can be customized according to local peculiarities. 
+#### Graph Construction
+| Method | Info |
+|---|---|
+| `BUFFER_SWEEP` | Uses a sweeping buffer, connecting up `max-neighbors-per-node` neighbours for each polygon within the `distance-threshold`.
+| `DELAUNAY` | Computes a delaunay triangulation upon the centroids of the settlement polygons. Filters the delaunay edges according to the `distance-threshold`
+#### Clustering
 | Algorithm | Info |
 |--- | --- |
 | `BFS` | Breadth-first search based retrieval of connected components in the settlement subgraph whose edges comply with the `distance-threshold` 
 | `DBSCAN` | Density-based clustering retrieving clusters of settlements which are separated by less than `distance-threshold`. Cluster with less then `min-cluster-size` amount of nodes are classified as _noise_.
 | `DBSC` | Adoption of `DBSCAN`, applying heuristics-based trimming to the settlement graph in the `beta`-order neighborhood of each settlement. Can combine spatial distance with attribute-based similarity to infer clusters. Currently only `attribute-mapper="AREA"` is supported, which takes the area of the settlement polygons into account. 
-
-Exemplary config file for `DBSCAN` with a threshold of 200m and a minimum of 5 nodes per cluster:
+#### Example Config
+Exemplary config file for `DELAUNAY` graph construction with `DBSCAN` clustering with a threshold of 200m and a minimum of 3 nodes per cluster. Also a post-filter is applied, requiring settlement polygons to have at least an area of 1000.0 m².
 ```json
 {
     "clustering": {
-        "mode": "DBSCAN", # Cluster Algorithm
+        "mode": "DBSCAN",
         "args": {
-            "distance-threshold": 200.0, # Clustering threshold in meters
-            "min-cluster-size": 5 # Minimum nodes to form a cluster
+            "distance-threshold": 200.0,
+            "min-cluster-size": 3
         }
     },
-    "buffer-distance-meters": 200.0, # Graph construction buffer in meters
-    "max-neighbors-per-node": 5
+    "graph-construction": {
+        "mode": "DELAUNAY",
+        "args": {
+            "distance-threshold": 200.0
+        }
+    },
+    "filters": [
+        {
+            "type": "ApproxAreaFilter",
+            "required-area": 1000.0
+
+        },
+        {
+            "type": "InsidePolygonFilter"
+        }
+    ]
 }
 ```
 # HPC Deployment
