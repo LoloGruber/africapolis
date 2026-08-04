@@ -19,7 +19,7 @@ if [ ! -d "$WORKFLOW_DIR" ] || [ "$REINSTALL" = true ]; then
     mkdir -p "$WORKFLOW_DIR"
     cd $TMPDIR
     rm -rf africapolis
-    git clone https://gitlab2.informatik.uni-wuerzburg.de/descartes/sos/africapolis
+    git clone https://github.com/LoloGruber/africapolis.git
     cp -r africapolis/cwl/ $WORKFLOW_DIR/cwl
     cp -r africapolis/data/input $WORKFLOW_DIR/input
     cp -r fricapolis/data/cfg $WORKFLOW_DIR/cfg
