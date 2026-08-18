@@ -52,9 +52,9 @@ public:
         using SettlementType = SettlementShape<Shapetype>;
         using EdgeGeometryType = fishnet::geometry::SimplePolygon<double>;
         OGRSpatialReference spatialRef;
-        const auto reader = ObservableShapefileReader<Shapetype>([&spatialRef](const fishnet::VectorLayer<Shapetype> & layer){spatialRef = layer.getSpatialReference();});
-        auto nodes = SettlementType::read<fishnet::Shapefile>(
-            geometryFiles | std::views::transform([](const std::string & file) { return fishnet::Shapefile(fishnet::util::PathHelper::absoluteCanonical(file)); }),
+        const auto reader = ObservableVectorReader<Shapetype>([&spatialRef](const fishnet::VectorLayer<Shapetype> & layer){spatialRef = layer.getSpatialReference();});
+        auto nodes = SettlementType::read<fishnet::AbstractVectorFile>(
+            geometryFiles | std::views::transform([](const std::string & file) { return fishnet::AbstractVectorFile(fishnet::util::PathHelper::absoluteCanonical(file)); }),
             reader,
             HashingFileReferenceMapper{});
         auto graph = fishnet::graph::GraphFactory::UndirectedGraph(
@@ -70,7 +70,12 @@ public:
                 outputLayer.addFeature(fishnet::Feature<EdgeGeometryType>(optEdgePolygon.value()));
             }
         }
-        fishnet::VectorIO::overwrite(outputLayer,fishnet::Shapefile(outputStem+"_edges.shp"));
+        // Derive output extension from first input file, default to .shp
+        std::string outputExtension = ".shp";
+        if(not geometryFiles.empty()){
+            outputExtension = std::filesystem::path(geometryFiles.front()).extension().string();
+        }
+        fishnet::VectorIO::overwrite(outputLayer, fishnet::AbstractVectorFile(outputStem+"_edges"+outputExtension));
     }
 };
 

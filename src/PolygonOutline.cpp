@@ -112,7 +112,7 @@ public:
         : Task("OutlineVisualization"), min_alpha(min_alpha), buffer_distance(buffer_distance) {}
 
     void operator()(const std::filesystem::path & inputFilename) const {
-        fishnet::Shapefile inputFile(inputFilename);
+        fishnet::AbstractVectorFile inputFile(inputFilename);
         auto inputLayer = fishnet::VectorIO::read<MultiPolygon_t>(inputFile);
         auto outputLayer = fishnet::VectorIO::emptyCopy<Polygon_t>(inputLayer);
         auto field = outputLayer.addDoubleField("Alpha").value_or_throw();
@@ -188,8 +188,8 @@ public:
             feature.setAttribute(field, alpha);
             outputLayer.addFeature(std::move(feature));
         }
-        fishnet::Shapefile outputFile = {fishnet::util::PathHelper::appendToFilename(inputFile.getPath(), "_concave_hull").filename()};
-        fishnet::VectorIO::overwrite(outputLayer, outputFile);
+        auto outputPath = fishnet::util::PathHelper::appendToFilename(inputFile.getPath(), "_concave_hull");
+        fishnet::VectorIO::overwrite(outputLayer, fishnet::AbstractVectorFile(outputPath));
     }
 };
 

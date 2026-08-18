@@ -15,20 +15,20 @@
 
 using json = nlohmann::json;
 
-template<fishnet::geometry::GeometryObject G>
-class GraphConstructionShapefileReader {
+template<fishnet::VectorGISFile F, fishnet::geometry::GeometryObject G>
+class GraphConstructionVectorReader {
 public:
     using geometry_type = G;
-    using file_type = fishnet::Shapefile;
+    using file_type = F;
 private:
     DistanceFunction distanceFunction;
     std::unordered_map<FileReference, std::filesystem::path> fileRefMap;
     static inline HashingFileReferenceMapper fileRefMapper;
 public:
-    fishnet::Either<fishnet::VectorLayer<G>,std::string> operator()(const fishnet::Shapefile & shapefile) {
-        auto layer = fishnet::VectorIO::tryRead(fishnet::ShapefileReader<G>{},shapefile);
+    fishnet::Either<fishnet::VectorLayer<G>,std::string> operator()(const F & vectorFile) {
+        auto layer = fishnet::VectorIO::tryRead<G>(static_cast<const fishnet::AbstractVectorFile&>(vectorFile));
         if(layer) {
-            this->fileRefMap[fileRefMapper(shapefile)] = shapefile.getPath();
+            this->fileRefMap[fileRefMapper(vectorFile)] = vectorFile.getPath();
             this->distanceFunction = distanceFunctionForSpatialReference(layer->getSpatialReference());
         }
         return layer;
@@ -107,12 +107,12 @@ private:
     }
 
 public:
-    GraphConstruction(const fishnet::Shapefile & primaryInput,
-                    const fishnet::util::range_of<fishnet::Shapefile> auto & secondaryInputs,
+    GraphConstruction(const fishnet::AbstractVectorFile & primaryInput,
+                    const fishnet::util::range_of<fishnet::AbstractVectorFile> auto & secondaryInputs,
                     GraphConstructionConfig && config):Task("GraphConstruction"), config(std::move(config)) 
     {
         // Read primary input and get distance function
-        auto reader = GraphConstructionShapefileReader<S>{};
+        auto reader = GraphConstructionVectorReader<S>{};
         this->settlements = SettlementShape<S>::read(primaryInput, reader, HashingFileReferenceMapper{});
         this->distanceFunction = reader.getDistanceFunction();
         this->fileRefMap = reader.getFileReferenceMap();
@@ -122,7 +122,7 @@ public:
             std::cerr << "Warning: No settlements read from primary input, returning empty graph" << std::endl;
         }else {
             auto distanceFromBoundingBoxFilter = DistancePredicate(this->distanceFunction, fishnet::geometry::minimalBoundingBox(this->settlements), this->config.distanceThreshold);
-            auto additionalSettlements = SettlementShape<S>::template read<fishnet::Shapefile>(secondaryInputs, reader, HashingFileReferenceMapper{}, distanceFromBoundingBoxFilter);
+            auto additionalSettlements = SettlementShape<S>::template read<fishnet::AbstractVectorFile>(secondaryInputs, reader, HashingFileReferenceMapper{}, distanceFromBoundingBoxFilter);
             this->settlements.insert(this->settlements.end(), additionalSettlements.begin(), additionalSettlements.end());
         }
     }
@@ -142,21 +142,23 @@ public:
     }
 };
 
+static bool isVectorFile(const std::string & path) {
+    auto ext = std::filesystem::path(path).extension().string();
+    return ext == ".shp" || ext == ".gpkg";
+}
+
 int main(int argc, char *argv[]){
     // Parse cmd arguments
     CLI::App app{"Africapolis Graph Construction"};
     std::string primaryInput;
     std::vector<std::string> additionalInputs;
     std::string configfile;
-    app.add_option("-i,--input",primaryInput,"Primary input shapefile storing the settlements")->required()->check(CLI::ExistingFile);
-    app.add_option("-a,--additional_input",additionalInputs,"Additional input shapefiles storing the settlements")->each([](const std::string & str){
-        try{
-            auto file = fishnet::Shapefile(str);
-            if(not file.exists())
-                throw std::invalid_argument("File "+ file.getPath().string() + " does not exist");
-        }catch(std::invalid_argument & error){
-            throw CLI::ValidationError(error.what());
-        }
+    app.add_option("-i,--input",primaryInput,"Primary input vector file storing the settlements")->required()->check(CLI::ExistingFile);
+    app.add_option("-a,--additional_input",additionalInputs,"Additional input vector files storing the settlements")->each([](const std::string & str){
+        if(not isVectorFile(str))
+            throw CLI::ValidationError("File "+ str + " is not a supported vector file (.shp or .gpkg)");
+        if(not std::filesystem::exists(str))
+            throw CLI::ValidationError("File "+ str + " does not exist");
     });
     app.add_option("-c,--config", configfile, "Workflow configuration file path")->required();
     CLI11_PARSE(app, argc, argv);
@@ -165,8 +167,8 @@ int main(int argc, char *argv[]){
     using ShapeType = fishnet::geometry::Polygon<double>;
     GraphConstructionConfig config(json::parse(std::ifstream(configfile)));
     GraphConstruction<ShapeType> graphConstructor(
-        fishnet::Shapefile(fishnet::util::PathHelper::absoluteCanonical(primaryInput)),
-        additionalInputs | std::views::transform([](const std::string & str){ return fishnet::Shapefile(fishnet::util::PathHelper::absoluteCanonical(str)); }),
+        fishnet::AbstractVectorFile(fishnet::util::PathHelper::absoluteCanonical(primaryInput)),
+        additionalInputs | std::views::transform([](const std::string & str){ return fishnet::AbstractVectorFile(fishnet::util::PathHelper::absoluteCanonical(str)); }),
         std::move(config)
     );
     graphConstructor.run();

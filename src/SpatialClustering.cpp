@@ -86,7 +86,11 @@ struct ClusteringConfig:TaskConfig {
     }
 };
 
-
+static std::string getOutputFilename(const std::string & inputFilename, const std::string & suffix) {
+    auto path = std::filesystem::path(inputFilename);
+    auto ext = path.extension().string();
+    return fishnet::util::PathHelper::absoluteCanonical(path.stem().string() + suffix + ext).string();
+}
 
 class SpatialClustering : public Task {
 private: 
@@ -94,6 +98,7 @@ private:
     std::vector<std::string> inputFilenames;
     std::filesystem::path graphFile;
     std::string outputStem;
+    std::string outputExtension;
 public:
 
     SpatialClustering(
@@ -101,22 +106,29 @@ public:
         std::vector<std::string> && inputFilenames,
         const std::filesystem::path & graphFile,
         std::string && outputStem
-    ):Task("Clustering"), config(config), inputFilenames(std::move(inputFilenames)), graphFile(graphFile), outputStem(std::move(outputStem)){}
+    ):Task("Clustering"), config(config), inputFilenames(std::move(inputFilenames)), graphFile(graphFile), outputStem(std::move(outputStem)){
+        // Derive output extension from first input file
+        if(not this->inputFilenames.empty()){
+            this->outputExtension = std::filesystem::path(this->inputFilenames.front()).extension().string();
+        } else {
+            this->outputExtension = ".shp"; // default fallback
+        }
+    }
     
 
     void run() {
         // Load shapes and settlement graph
         using ShapeType = fishnet::geometry::Polygon<double>;
         using SettlementType = SettlementShape<ShapeType>;
-        auto shapeFiles = inputFilenames | std::views::transform([](const std::string & str){ return fishnet::Shapefile(str); });
+        auto vectorFiles = inputFilenames | std::views::transform([](const std::string & str){ return fishnet::AbstractVectorFile(str); });
         OGRSpatialReference spatialRef;
         auto onReadStoreSpatialRef = [&spatialRef](const fishnet::VectorLayer<ShapeType> & layer){
             if(spatialRef.IsEmpty()){
                 spatialRef = layer.getSpatialReference();
             }
         };
-        ObservableShapefileReader<ShapeType> reader(onReadStoreSpatialRef);
-        auto settlements = SettlementType::read<fishnet::Shapefile>(shapeFiles, reader,HashingFileReferenceMapper{});
+        ObservableVectorReader<ShapeType> reader(onReadStoreSpatialRef);
+        auto settlements = SettlementType::read<fishnet::AbstractVectorFile>(vectorFiles, reader,HashingFileReferenceMapper{});
         auto adj = ReadingBinarySettlementGraphAdjacency<SettlementType>(
             this->graphFile,
             SettlementShapeDeserializer<ShapeType>{std::move(settlements)}
@@ -144,12 +156,17 @@ public:
             feature.setAttribute(idField, size_t(9999999999999));
             outputLayer.addFeature(std::move(feature));
         }
-        fishnet::VectorIO::overwrite(outputLayer, fishnet::Shapefile(fishnet::util::PathHelper::absoluteCanonical(outputStem + ".shp")));
+        auto outputPath = fishnet::util::PathHelper::absoluteCanonical(this->outputStem + this->outputExtension);
+        fishnet::VectorIO::overwrite(outputLayer, fishnet::AbstractVectorFile(outputPath));
     }
 
 
 };
 
+static bool isVectorFile(const std::string & path) {
+    auto ext = std::filesystem::path(path).extension().string();
+    return ext == ".shp" || ext == ".gpkg";
+}
 
 int main(int argc, char *argv[]){
     // Parse cmd arguments
@@ -158,18 +175,15 @@ int main(int argc, char *argv[]){
     std::string graphFile;
     std::string configfile;
     std::string outputStem;
-    app.add_option("-i,--inputs",inputfiles,"Input Shapefiles storing the polygons with id for clustering")->required()->each([](const std::string & str){
-        try{
-            auto file = fishnet::Shapefile(str);
-            if(not file.exists())
-                throw std::invalid_argument("File "+ file.getPath().string() + " does not exist");
-        }catch(std::invalid_argument & error){
-            throw CLI::ValidationError(error.what());
-        }
+    app.add_option("-i,--inputs",inputfiles,"Input vector files storing the polygons with id for clustering")->required()->each([](const std::string & str){
+        if(not isVectorFile(str))
+            throw CLI::ValidationError("File "+ str + " is not a supported vector file (.shp or .gpkg)");
+        if(not std::filesystem::exists(str))
+            throw CLI::ValidationError("File "+ str + " does not exist");
     });
     app.add_option("-c,--config", configfile, "Workflow configuration file path")->required()->check(CLI::ExistingFile);
     app.add_option("-g, --graph",graphFile,"Graph file")->required()->check(CLI::ExistingFile);
-    app.add_option("--outputStem", outputStem, "Output filename stem for storing the clustered shapefile");
+    app.add_option("--outputStem", outputStem, "Output filename stem for storing the clustered vector file");
     CLI11_PARSE(app, argc, argv); 
     SpatialClustering clusteringTask(
         ClusteringConfig(nlohmann::json::parse(std::ifstream(configfile))),
@@ -180,4 +194,3 @@ int main(int argc, char *argv[]){
     clusteringTask.run();
     return 0;
 }
-
