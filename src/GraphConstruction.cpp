@@ -15,18 +15,18 @@
 
 using json = nlohmann::json;
 
-template<fishnet::VectorGISFile F, fishnet::geometry::GeometryObject G>
+template<fishnet::geometry::GeometryObject G>
 class GraphConstructionVectorReader {
 public:
     using geometry_type = G;
-    using file_type = F;
+    using file_type = fishnet::AbstractVectorFile;
 private:
     DistanceFunction distanceFunction;
     std::unordered_map<FileReference, std::filesystem::path> fileRefMap;
     static inline HashingFileReferenceMapper fileRefMapper;
 public:
-    fishnet::Either<fishnet::VectorLayer<G>,std::string> operator()(const F & vectorFile) {
-        auto layer = fishnet::VectorIO::tryRead<G>(static_cast<const fishnet::AbstractVectorFile&>(vectorFile));
+    fishnet::Either<fishnet::VectorLayer<G>,std::string> operator()(const fishnet::AbstractVectorFile & vectorFile) {
+        auto layer = fishnet::VectorIO::tryRead<G>(vectorFile);
         if(layer) {
             this->fileRefMap[fileRefMapper(vectorFile)] = vectorFile.getPath();
             this->distanceFunction = distanceFunctionForSpatialReference(layer->getSpatialReference());

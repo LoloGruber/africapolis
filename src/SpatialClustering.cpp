@@ -11,7 +11,7 @@
 #include <fishnet/FunctionalConcepts.hpp>
 #include <fishnet/PathHelper.h>
 #include "BinarySettlementGraphAdjacency.hpp"
-#include "ObservableShapefileReader.hpp"
+#include "ObservableVectorFileReader.hpp"
 
 
 enum class ClusterMode {
@@ -127,7 +127,7 @@ public:
                 spatialRef = layer.getSpatialReference();
             }
         };
-        ObservableVectorReader<ShapeType> reader(onReadStoreSpatialRef);
+        ObservableVectorFileReader<ShapeType> reader(onReadStoreSpatialRef);
         auto settlements = SettlementType::read<fishnet::AbstractVectorFile>(vectorFiles, reader,HashingFileReferenceMapper{});
         auto adj = ReadingBinarySettlementGraphAdjacency<SettlementType>(
             this->graphFile,
