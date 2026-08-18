@@ -93,17 +93,12 @@ The required binaries of *Africapolis* can be manually install on the system. Th
 ```shell
 ./install.sh
 ```
-### Python Scripts
-Setup a python environment and install dependencies first:
-```py
-python -m venv .venv
-source .venv/bin/activate
-python -m pip install -r python/requirements.txt
-```
 
 ### Installing CWL-Runner
-Additionally, a [CWL Runner](https://www.commonwl.org/implementations/) must be installed to execute the workflow. The reference executor [cwltool](https://cwltool.readthedocs.io/en/latest/cli.html#cwltool) is recommended and can be installed in the python virtual environment as follows:
+Additionally, a [CWL Runner](https://www.commonwl.org/implementations/) must be installed to execute the workflow. The reference executor [cwltool](https://cwltool.readthedocs.io/en/latest/cli.html#cwltool) is recommended and can be installed in a python virtual environment as follows:
 ```shell
+python -m venv .venv
+source .venv/bin/activate
 python -m pip install cwltool
 ```
 ### Running the Workflow
