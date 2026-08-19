@@ -17,3 +17,7 @@ install(TARGETS AfricapolisPolygonOutline RUNTIME DESTINATION ${CMAKE_INSTALL_PR
 add_executable(AfricapolisEdgeVisualization EdgeVisualization.cpp)
 target_link_libraries(AfricapolisEdgeVisualization PRIVATE Fishnet::Fishnet Fishnet::Workflow CLI11::CLI11)
 install(TARGETS AfricapolisEdgeVisualization RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
+
+add_executable(AfricapolisMSTVisualization MSTVisualization.cpp)
+target_link_libraries(AfricapolisMSTVisualization PRIVATE Fishnet::Fishnet Fishnet::Workflow CLI11::CLI11)
+install(TARGETS AfricapolisMSTVisualization RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
