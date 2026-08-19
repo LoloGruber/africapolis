@@ -7,11 +7,11 @@
 #include <fishnet/DistancePredicate.hpp>
 #include <fishnet/CompositePredicate.hpp>
 #include <fishnet/BinaryFileAdjacency.hpp>
+#include <fishnet/ShapeGeometry.hpp>
 #include <fishnet/SettlementShape.hpp>
 #include <fishnet/PolygonNeighbours.hpp>
 #include "BinarySettlementGraphAdjacency.hpp"
-#include "fishnet/FunctionalConcepts.hpp"
-#include "fishnet/ShapeGeometry.hpp"
+#include "CLI/CLI.hpp"
 
 using json = nlohmann::json;
 
@@ -142,11 +142,6 @@ public:
     }
 };
 
-static bool isVectorFile(const std::string & path) {
-    auto ext = std::filesystem::path(path).extension().string();
-    return ext == ".shp" || ext == ".gpkg";
-}
-
 int main(int argc, char *argv[]){
     // Parse cmd arguments
     CLI::App app{"Africapolis Graph Construction"};
@@ -154,12 +149,7 @@ int main(int argc, char *argv[]){
     std::vector<std::string> additionalInputs;
     std::string configfile;
     app.add_option("-i,--input",primaryInput,"Primary input vector file storing the settlements")->required()->check(CLI::ExistingFile);
-    app.add_option("-a,--additional_input",additionalInputs,"Additional input vector files storing the settlements")->each([](const std::string & str){
-        if(not isVectorFile(str))
-            throw CLI::ValidationError("File "+ str + " is not a supported vector file (.shp or .gpkg)");
-        if(not std::filesystem::exists(str))
-            throw CLI::ValidationError("File "+ str + " does not exist");
-    });
+    app.add_option("-a,--additional_input",additionalInputs,"Additional input vector files storing the settlements")->each(CLI::ExistingFile);
     app.add_option("-c,--config", configfile, "Workflow configuration file path")->required();
     CLI11_PARSE(app, argc, argv);
 

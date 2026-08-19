@@ -17,7 +17,7 @@ public:
     : onSuccess(std::move(onSuccess)) {}
 
     fishnet::Either<fishnet::VectorLayer<G>,std::string> operator()(const file_type & file) const {
-        auto layer = fishnet::VectorIO::tryRead<G>(static_cast<const fishnet::AbstractVectorFile&>(file));
+        auto layer = fishnet::VectorIO::tryRead<G>(file);
         if(layer)
             onSuccess(layer.value());
         return layer;

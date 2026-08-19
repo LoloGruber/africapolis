@@ -1,4 +1,5 @@
 #include <CLI/CLI.hpp>
+#include <ranges>
 #include <magic_enum.hpp>
 #include <fishnet/Fishnet.hpp>
 #include <fishnet/DBSC.hpp>
@@ -86,19 +87,12 @@ struct ClusteringConfig:TaskConfig {
     }
 };
 
-static std::string getOutputFilename(const std::string & inputFilename, const std::string & suffix) {
-    auto path = std::filesystem::path(inputFilename);
-    auto ext = path.extension().string();
-    return fishnet::util::PathHelper::absoluteCanonical(path.stem().string() + suffix + ext).string();
-}
-
 class SpatialClustering : public Task {
 private: 
     ClusteringConfig config;
     std::vector<std::string> inputFilenames;
     std::filesystem::path graphFile;
     std::string outputStem;
-    std::string outputExtension;
 public:
 
     SpatialClustering(
@@ -106,16 +100,8 @@ public:
         std::vector<std::string> && inputFilenames,
         const std::filesystem::path & graphFile,
         std::string && outputStem
-    ):Task("Clustering"), config(config), inputFilenames(std::move(inputFilenames)), graphFile(graphFile), outputStem(std::move(outputStem)){
-        // Derive output extension from first input file
-        if(not this->inputFilenames.empty()){
-            this->outputExtension = std::filesystem::path(this->inputFilenames.front()).extension().string();
-        } else {
-            this->outputExtension = ".shp"; // default fallback
-        }
-    }
+    ):Task("Clustering"), config(config), inputFilenames(std::move(inputFilenames)), graphFile(graphFile), outputStem(std::move(outputStem)){}
     
-
     void run() {
         // Load shapes and settlement graph
         using ShapeType = fishnet::geometry::Polygon<double>;
@@ -156,17 +142,11 @@ public:
             feature.setAttribute(idField, size_t(9999999999999));
             outputLayer.addFeature(std::move(feature));
         }
-        auto outputPath = fishnet::util::PathHelper::absoluteCanonical(this->outputStem + this->outputExtension);
+        auto extension = (*std::ranges::begin(vectorFiles)).getPath().extension().string();
+        auto outputPath = fishnet::util::PathHelper::absoluteCanonical(this->outputStem + extension);
         fishnet::VectorIO::overwrite(outputLayer, fishnet::AbstractVectorFile(outputPath));
     }
-
-
 };
-
-static bool isVectorFile(const std::string & path) {
-    auto ext = std::filesystem::path(path).extension().string();
-    return ext == ".shp" || ext == ".gpkg";
-}
 
 int main(int argc, char *argv[]){
     // Parse cmd arguments
@@ -175,12 +155,7 @@ int main(int argc, char *argv[]){
     std::string graphFile;
     std::string configfile;
     std::string outputStem;
-    app.add_option("-i,--inputs",inputfiles,"Input vector files storing the polygons with id for clustering")->required()->each([](const std::string & str){
-        if(not isVectorFile(str))
-            throw CLI::ValidationError("File "+ str + " is not a supported vector file (.shp or .gpkg)");
-        if(not std::filesystem::exists(str))
-            throw CLI::ValidationError("File "+ str + " does not exist");
-    });
+    app.add_option("-i,--inputs",inputfiles,"Input vector files storing the polygons with id for clustering")->required()->each(CLI::ExistingFile);
     app.add_option("-c,--config", configfile, "Workflow configuration file path")->required()->check(CLI::ExistingFile);
     app.add_option("-g, --graph",graphFile,"Graph file")->required()->check(CLI::ExistingFile);
     app.add_option("--outputStem", outputStem, "Output filename stem for storing the clustered vector file");

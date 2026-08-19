@@ -70,11 +70,7 @@ public:
                 outputLayer.addFeature(fishnet::Feature<EdgeGeometryType>(optEdgePolygon.value()));
             }
         }
-        // Derive output extension from first input file, default to .shp
-        std::string outputExtension = ".shp";
-        if(not geometryFiles.empty()){
-            outputExtension = std::filesystem::path(geometryFiles.front()).extension().string();
-        }
+        auto outputExtension = std::filesystem::path(geometryFiles.front()).extension().string();
         fishnet::VectorIO::overwrite(outputLayer, fishnet::AbstractVectorFile(outputStem+"_edges"+outputExtension));
     }
 };
@@ -84,15 +80,7 @@ int main(int argc, char *argv[]){
     std::vector<std::string> geometryFiles;
     std::string graphFile;
     std::string outputStem;
-    app.add_option("-i,--inputs",geometryFiles,"Shapefiles storing the polygons with id")->required()->each([](const std::string & str){
-        try{
-            auto file = fishnet::Shapefile(str);
-            if(not file.exists())
-                throw std::invalid_argument("File "+ file.getPath().string() + " does not exist");
-        }catch(std::invalid_argument & error){
-            throw CLI::ValidationError(error.what());
-        }
-    });
+    app.add_option("-i,--inputs",geometryFiles,"Shapefiles storing the polygons with id")->required()->each(CLI::ExistingFile);
     app.add_option("-g,--graph",graphFile,"Input binary file storing the settlement graph adjacency")->required()->check(CLI::ExistingFile);
     app.add_option("-o", outputStem, "Output filename stem for storing the clustered shapefile");
     CLI11_PARSE(app, argc, argv);
