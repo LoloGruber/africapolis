@@ -1,51 +1,83 @@
 cwlVersion: v1.2
 class: CommandLineTool
-baseCommand: [FishnetShapefileSplitter]
+baseCommand: [FishnetVectorFileSplitter]
+
 hints:
   DockerRequirement:
     dockerPull: logru/fishnet-apps:1.3.1
+
 requirements:
   InlineJavascriptRequirement: {}
   ResourceRequirement:
     coresMin: 1
     ramMin: 1000
+
 inputs:
   shapefile:
-    type: File
-    secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
-    # format: SHP
+    type: File?
+    secondaryFiles:
+      - "^.shx"
+      - "^.dbf"
+      - "^.prj"
+      - "^.cpg?"
+      - "^.qpj?"
     inputBinding:
-        prefix: --input 
+      prefix: --input
+    doc: "Input shapefile with required secondary files (.shx, .dbf, .prj)"
+
+  vectorFile:
+    type: File?
+    inputBinding:
+      prefix: --input
+    doc: "Input GeoPackage file (no secondary files required)"
+
   outputDir:
     type: string
     default: "./"
     inputBinding:
-        prefix: -o
+      prefix: -o
     doc: "Output directory"
+
+  outputFormat:
+    type: string
+    default: "GEOPACKAGE"
+    inputBinding:
+      prefix: -f
+    doc: "Output format (SHAPEFILE or GEOPACKAGE)"
+
   depth:
     type: int
     inputBinding:
-        prefix: --depth
+      prefix: --depth
+
   xOffset:
     type: int
     default: 0
     inputBinding:
-        prefix: -x
+      prefix: -x
     doc: "X offset for the naming of the output tiles"
+
   yOffset:
     type: int
     default: 0
     inputBinding:
-        prefix: -y
+      prefix: -y
     doc: "Y offset for the naming of the output tiles"
+
 outputs:
-  split_shapefiles:
+  split_files:
     type: File[]
-    # format: SHP
-    secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
+    secondaryFiles:
+      - "^.shx?"
+      - "^.dbf?"
+      - "^.prj?"
+      - "^.cpg?"
+      - "^.qpj?"
     outputBinding:
-        glob: "$(inputs.shapefile.nameroot)*.shp"
-    doc: "Split output files"
-stdout: SPLIT_$(inputs.shapefile.nameroot)_stdout.log
-stderr: SPLIT_$(inputs.shapefile.nameroot)_stderr.log
-    
+      glob:
+        - "$((inputs.shapefile|| inputs.vectorFile).nameroot)*.shp"
+        - "$((inputs.shapefile|| inputs.vectorFile).nameroot)*.gpkg"
+    doc: "Split output spatial files (.shp or .gpkg)"
+
+stdout: SPLIT_$((inputs.shapefile|| inputs.vectorFile).nameroot)_stdout.log
+stderr: SPLIT_$((inputs.shapefile|| inputs.vectorFile).nameroot)_stderr.log
