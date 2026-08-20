@@ -32,3 +32,5 @@ outputs:
         secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
         outputBinding:
             glob: $(inputs.outputStem + "_mst.shp")
+stdout: $(inputs.outputStem + "_mst.log")
+stderr: $(inputs.outputStem + "_mst.err")
