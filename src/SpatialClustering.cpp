@@ -1,4 +1,5 @@
 #include <CLI/CLI.hpp>
+#include <ranges>
 #include <magic_enum.hpp>
 #include <fishnet/Fishnet.hpp>
 #include <fishnet/DBSC.hpp>
@@ -11,7 +12,7 @@
 #include <fishnet/FunctionalConcepts.hpp>
 #include <fishnet/PathHelper.h>
 #include "BinarySettlementGraphAdjacency.hpp"
-#include "ObservableShapefileReader.hpp"
+#include "ObservableVectorFileReader.hpp"
 
 
 enum class ClusterMode {
@@ -86,8 +87,6 @@ struct ClusteringConfig:TaskConfig {
     }
 };
 
-
-
 class SpatialClustering : public Task {
 private: 
     ClusteringConfig config;
@@ -103,20 +102,19 @@ public:
         std::string && outputStem
     ):Task("Clustering"), config(config), inputFilenames(std::move(inputFilenames)), graphFile(graphFile), outputStem(std::move(outputStem)){}
     
-
     void run() {
         // Load shapes and settlement graph
         using ShapeType = fishnet::geometry::Polygon<double>;
         using SettlementType = SettlementShape<ShapeType>;
-        auto shapeFiles = inputFilenames | std::views::transform([](const std::string & str){ return fishnet::Shapefile(str); });
+        auto vectorFiles = inputFilenames | std::views::transform([](const std::string & str){ return fishnet::AbstractVectorFile(str); });
         OGRSpatialReference spatialRef;
         auto onReadStoreSpatialRef = [&spatialRef](const fishnet::VectorLayer<ShapeType> & layer){
             if(spatialRef.IsEmpty()){
                 spatialRef = layer.getSpatialReference();
             }
         };
-        ObservableShapefileReader<ShapeType> reader(onReadStoreSpatialRef);
-        auto settlements = SettlementType::read<fishnet::Shapefile>(shapeFiles, reader,HashingFileReferenceMapper{});
+        ObservableVectorFileReader<ShapeType> reader(onReadStoreSpatialRef);
+        auto settlements = SettlementType::read<fishnet::AbstractVectorFile>(vectorFiles, reader,HashingFileReferenceMapper{});
         auto adj = ReadingBinarySettlementGraphAdjacency<SettlementType>(
             this->graphFile,
             SettlementShapeDeserializer<ShapeType>{std::move(settlements)}
@@ -144,12 +142,11 @@ public:
             feature.setAttribute(idField, size_t(9999999999999));
             outputLayer.addFeature(std::move(feature));
         }
-        fishnet::VectorIO::overwrite(outputLayer, fishnet::Shapefile(fishnet::util::PathHelper::absoluteCanonical(outputStem + ".shp")));
+        auto extension = (*std::ranges::begin(vectorFiles)).getPath().extension().string();
+        auto outputPath = fishnet::util::PathHelper::absoluteCanonical(this->outputStem + extension);
+        fishnet::VectorIO::overwrite(outputLayer, fishnet::AbstractVectorFile(outputPath));
     }
-
-
 };
-
 
 int main(int argc, char *argv[]){
     // Parse cmd arguments
@@ -158,18 +155,10 @@ int main(int argc, char *argv[]){
     std::string graphFile;
     std::string configfile;
     std::string outputStem;
-    app.add_option("-i,--inputs",inputfiles,"Input Shapefiles storing the polygons with id for clustering")->required()->each([](const std::string & str){
-        try{
-            auto file = fishnet::Shapefile(str);
-            if(not file.exists())
-                throw std::invalid_argument("File "+ file.getPath().string() + " does not exist");
-        }catch(std::invalid_argument & error){
-            throw CLI::ValidationError(error.what());
-        }
-    });
+    app.add_option("-i,--inputs",inputfiles,"Input vector files storing the polygons with id for clustering")->required()->each(CLI::ExistingFile);
     app.add_option("-c,--config", configfile, "Workflow configuration file path")->required()->check(CLI::ExistingFile);
     app.add_option("-g, --graph",graphFile,"Graph file")->required()->check(CLI::ExistingFile);
-    app.add_option("--outputStem", outputStem, "Output filename stem for storing the clustered shapefile");
+    app.add_option("--outputStem", outputStem, "Output filename stem for storing the clustered vector file");
     CLI11_PARSE(app, argc, argv); 
     SpatialClustering clusteringTask(
         ClusteringConfig(nlohmann::json::parse(std::ifstream(configfile))),
@@ -180,4 +169,3 @@ int main(int argc, char *argv[]){
     clusteringTask.run();
     return 0;
 }
-

@@ -5,8 +5,8 @@
 #include <fishnet/FileReference.hpp>
 
 struct HashingFileReferenceMapper {
-    FileReference operator()(const fishnet::Shapefile & shapefile) const noexcept {
-        return FileReference::hash(shapefile.getPath().stem());
+    FileReference operator()(const fishnet::AbstractVectorFile & vectorFile) const noexcept {
+        return FileReference::hash(vectorFile.getPath().stem());
     }
 };
 
