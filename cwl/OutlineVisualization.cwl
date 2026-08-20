@@ -16,12 +16,18 @@ inputs:
     # format: SHP
     inputBinding:
       prefix: -i
-  alpha:
+  mstFile:
+    type: File
+    secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
+    # format: SHP
+    inputBinding:
+      prefix: -m
+  initialBuffer:
     type: float
-    default: 0.05
+    default: 100.0
     inputBinding:
       position: 2
-      prefix: --alpha
+      prefix: --initial-buffer
   buffer:
     type: float
     default: 30.0

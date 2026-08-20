@@ -79,18 +79,19 @@ steps:
       files: filter/filtered_shapefile
     scatter: [workload]
     scatterMethod: dotproduct
-    out: [clusteredOutput, clusterEdges]
-  concaveHull:
+    out: [clusteredOutput, clusterMSTs]
+  visualization:
     run: OutlineVisualization.cwl
     in:
       shapefile: clustering/clusteredOutput
-    scatter: [shapefile]
+      mstFile: clustering/clusterMSTs
+    scatter: [shapefile, mstFile]
     scatterMethod: dotproduct
     out: [outputShapefile]
   postFilter:
     run: fishnet/filter.cwl
     in:
-      shapefile: concaveHull/outputShapefile
+      shapefile: visualization/outputShapefile
       config: configFile
     scatter: [shapefile]
     out: [filtered_shapefile]
@@ -105,10 +106,10 @@ steps:
   mergeEdges:
     run: fishnet/merge.cwl
     in:
-      shpFiles: clustering/clusterEdges
+      shpFiles: clustering/clusterMSTs
       outputPath:
         source: shapefile
-        valueFrom: $("./"+self.nameroot+"_Africapolis_Edges")
+        valueFrom: $("./"+self.nameroot+"_Africapolis_MST")
     out: [mergedOutput]
   mergeConcaveHulls:
     run: fishnet/merge.cwl

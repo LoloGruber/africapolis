@@ -1,40 +1,30 @@
+#include "fishnet/CollectionConcepts.hpp"
+#include "fishnet/Feature.hpp"
+#include "fishnet/OGRGeometryAdapter.hpp"
+#include "fishnet/SimplePolygon.hpp"
+#include "fishnet/Vec2D.hpp"
+#include "fishnet/VectorLayer.hpp"
+#include <algorithm>
+#include <expected>
 #include <fishnet/Fishnet.hpp>
+#include <ogr_spatialref.h>
 #include <spdlog/spdlog.h>
 #include <fishnet/Task.hpp>
 #include <CLI/CLI.hpp>
 #include <ogr_geometry.h>
+#include <string>
+#include <unordered_map>
+#include <vector>
+#include "AfricapolisConstants.hpp"
 
-using MultiPolygon_t = fishnet::geometry::MultiPolygon<fishnet::geometry::Polygon<double>>;
-using Polygon_t = fishnet::geometry::SimplePolygon<double>;
-using Number_t= typename MultiPolygon_t::numeric_type;
+using MSTEdge_t = fishnet::geometry::SimplePolygon<double>;
+using SettlementShape_t = fishnet::geometry::Polygon<double>;
+using ResultShape_t = fishnet::geometry::Polygon<double>;
 
-class OutlineVisualization: public Task{
+class SettlementVisualization: public Task{
 private:
-    double min_alpha;
-    double buffer_distance;
-
-    /**
-     * @brief Extracts the exterior ring of a Polygon as a fishnet SimplePolygon.
-     *        If the geometry is a MultiPolygon, falls back to its convex hull.
-     * @param geom OGRGeometry pointer (may be null)
-     * @return Optional fishnet SimplePolygon
-     */
-    static std::optional<Polygon_t> extractPolygon(const OGRGeometry * geom) {
-        if (geom == nullptr) return std::nullopt;
-        if (geom->toPolygon() != nullptr) {
-            return fishnet::OGRGeometryAdapter::fromOGR(*geom->toPolygon()->getExteriorRing());
-        }
-        if (geom->toMultiPolygon() != nullptr) {
-            OGRGeometry * hull = geom->ConvexHull();
-            std::optional<Polygon_t> result;
-            if (hull != nullptr && hull->toPolygon() != nullptr) {
-                result = fishnet::OGRGeometryAdapter::fromOGR(*hull->toPolygon()->getExteriorRing());
-            }
-            OGRGeometryFactory::destroyGeometry(hull);
-            return result;
-        }
-        return std::nullopt;
-    }
+    double initialBufferDistance;
+    double targetBufferDistance;
 
     /**
      * @brief Creates an Azimuthal Equidistant OGRSpatialReference centered on the given lon/lat.
@@ -42,153 +32,153 @@ private:
      * @param lat Center latitude (degrees)
      * @return OGRSpatialReference with Azimuthal Equidistant projection
      */
-    static OGRSpatialReference createAzimuthalEquidistant(double lon, double lat) {
+    static OGRSpatialReference createAzimuthalEquidistant(fishnet::util::forward_range_of<fishnet::Feature<SettlementShape_t>> auto && cluster) {
+        auto polygons = cluster | std::views::transform([](const auto & settlement){ return settlement.getGeometry(); });
+        double total_area = std::ranges::fold_left(polygons, 0.0, [](double current, const auto & polygon){ return current + polygon.area(); });
+        auto centroid = std::ranges::fold_left(polygons, fishnet::geometry::Vec2DReal(), [total_area](const auto & current, const auto & polygon){ return current + polygon.centroid() * (polygon.area()/ total_area); });
         OGRSpatialReference sr;
-        sr.SetAE(lat, lon, 0.0, 0.0);
+        sr.SetAE(centroid.y, centroid.x, 0.0, 0.0);
         return sr;
     }
 
-    /**
-     * @brief Buffer an OGRGeometry by a distance in meters using azimuthal equidistant reprojection.
-     *        Reprojects to a local azimuthal CRS, buffers, then reprojects back to the original CRS.
-     * @param geom OGRGeometry to buffer (in WGS84 / degrees)
-     * @param distanceMeters Buffer distance in meters
-     * @param lon Center longitude for the projection
-     * @param lat Center latitude for the projection
-     * @return A new OGRGeometry pointer (caller must destroy), or nullptr on failure.
-     */
-    static OGRGeometry * bufferInMeters(const OGRGeometry * geom, double distanceMeters, double lon, double lat) {
-        if (geom == nullptr) return nullptr;
-
-        OGRSpatialReference wgs84;
-        wgs84.importFromEPSG(4326);
-
-        OGRSpatialReference azEq = createAzimuthalEquidistant(lon, lat);
-
-        OGRCoordinateTransformation * toAzEq = OGRCreateCoordinateTransformation(&wgs84, &azEq);
-        OGRCoordinateTransformation * toWgs84 = OGRCreateCoordinateTransformation(&azEq, &wgs84);
-
-        if (toAzEq == nullptr || toWgs84 == nullptr) {
-            OCTDestroyCoordinateTransformation(toAzEq);
-            OCTDestroyCoordinateTransformation(toWgs84);
-            return nullptr;
+    std::unordered_map<size_t,std::vector<fishnet::Feature<SettlementShape_t>>> clusterSettlements(fishnet::VectorLayer<SettlementShape_t> && settlements) const {
+        std::unordered_map<size_t,std::vector<fishnet::Feature<SettlementShape_t>>> clusters;
+        auto clusterIDField = settlements.getSizeField(Africapolis::CLUSTER_ID_FIELD).value_or_throw();
+        for(auto && settlement : settlements.getFeatures()){
+            size_t clusterID = settlement.getAttribute(clusterIDField).value_or_throw();
+            clusters[clusterID].emplace_back(std::move(settlement));
         }
-
-        OGRGeometry * cloned = geom->clone();
-        if (cloned == nullptr) {
-            OCTDestroyCoordinateTransformation(toAzEq);
-            OCTDestroyCoordinateTransformation(toWgs84);
-            return nullptr;
+        return clusters;
+    }
+    std::unordered_map<size_t, std::vector<MSTEdge_t>> mstEdges(const fishnet::AbstractVectorFile & mstFile) const {
+        std::unordered_map<size_t, fishnet::Feature<MSTEdge_t>> edges;
+        auto mstLayer = fishnet::VectorIO::read<MSTEdge_t>(mstFile);
+        auto fromField = mstLayer.getSizeField(Africapolis::FROM_ID_FIELD).value_or_throw();
+        auto toField = mstLayer.getSizeField(Africapolis::TO_ID_FIELD).value_or_throw();
+        std::unordered_map<size_t, std::vector<MSTEdge_t>> nodesToFeature;
+        for (auto && [idx,feature] : std::move(mstLayer).getFeatures() | std::views::enumerate) {
+            size_t fromID = feature.getAttribute(fromField).value_or_throw();
+            size_t toID = feature.getAttribute(toField).value_or_throw();
+            nodesToFeature[fromID].push_back(feature.getGeometry());
+            nodesToFeature[toID].push_back(feature.getGeometry());
         }
-
-        if (cloned->transform(toAzEq) != OGRERR_NONE) {
-            OGRGeometryFactory::destroyGeometry(cloned);
-            OCTDestroyCoordinateTransformation(toAzEq);
-            OCTDestroyCoordinateTransformation(toWgs84);
-            return nullptr;
-        }
-
-        OGRGeometry * buffered = cloned->Buffer(distanceMeters, 30);
-        OGRGeometryFactory::destroyGeometry(cloned);
-        OCTDestroyCoordinateTransformation(toAzEq);
-
-        if (buffered == nullptr) {
-            OCTDestroyCoordinateTransformation(toWgs84);
-            return nullptr;
-        }
-
-        if (buffered->transform(toWgs84) != OGRERR_NONE) {
-            OGRGeometryFactory::destroyGeometry(buffered);
-            OCTDestroyCoordinateTransformation(toWgs84);
-            return nullptr;
-        }
-
-        OCTDestroyCoordinateTransformation(toWgs84);
-        return buffered;
+        return nodesToFeature;
     }
 
-public: 
-    OutlineVisualization(double min_alpha, double buffer_distance)
-        : Task("OutlineVisualization"), min_alpha(min_alpha), buffer_distance(buffer_distance) {}
+    struct VisualizeCluster {
+        double initialBufferDistance;
+        double targetBufferDistance;
+        OGRSpatialReference metric;
+        OGRCoordinateTransformation * toMetric; 
+        OGRCoordinateTransformation * toSrc; 
 
-    void operator()(const std::filesystem::path & inputFilename) const {
-        fishnet::AbstractVectorFile inputFile(inputFilename);
-        auto inputLayer = fishnet::VectorIO::read<MultiPolygon_t>(inputFile);
-        auto outputLayer = fishnet::VectorIO::emptyCopy<Polygon_t>(inputLayer);
-        auto field = outputLayer.addDoubleField("Alpha").value_or_throw();
-        for(const auto & multiPolygonFeature: inputLayer.getFeatures()) {
-            const auto & geometry = multiPolygonFeature.getGeometry();
+        VisualizeCluster(double initialBufferDistance, double targetBufferDistance, OGRSpatialReference && metric, OGRSpatialReference const & src)
+            : initialBufferDistance(initialBufferDistance), targetBufferDistance(targetBufferDistance), metric(std::move(metric)) 
+        {
+            this->toMetric = OGRCreateCoordinateTransformation(&src, &this->metric);
+            this->toSrc = OGRCreateCoordinateTransformation(&this->metric, &src);
+        }
 
-            // Pass single-polygon features through unchanged
-            if (fishnet::util::size(geometry.getPolygons()) < 2) {
-                auto singlePoly = geometry.getPolygons().front();
-                auto feature = fishnet::Feature<Polygon_t>(singlePoly);
-                feature.copyAttributes(multiPolygonFeature);
-                feature.setAttribute(field, 0.0);
-                outputLayer.addFeature(std::move(feature));
-                continue;
+        ~VisualizeCluster() {
+            OCTDestroyCoordinateTransformation(toMetric);
+            OCTDestroyCoordinateTransformation(toSrc);
+        }
+
+        fishnet::Either<ResultShape_t, std::string> operator()(
+            fishnet::util::forward_range_of<fishnet::Feature<SettlementShape_t>> auto && cluster,
+            std::unordered_map<size_t, std::vector<MSTEdge_t>> const & idToMSTEdges,
+            std::vector<size_t> const & mstNodeIDs,
+            auto IDField) const
+        {
+            if (cluster.empty()) {
+                return std::unexpected("Cannot visualize an empty cluster");
             }
-
-            // Step c: Concave hull of the settlement (computed in OGR space)
-            OGRMultiPoint multiPoint;
-            for(const auto & polygon : geometry.getPolygons()) {
-                for(const auto & point : polygon.getBoundary().getPoints()) {
-                    multiPoint.addGeometry(std::make_unique<OGRPoint>(point.x, point.y));
+            using GeometryPtr = fishnet::OGRGeometryAdapter::OGRUniquePtr<OGRGeometry>;
+            std::vector<GeometryPtr> settlementPolygons; // stores transformed and buffered settlement polygons
+            for (const auto & settlement : cluster) {
+                auto ogrGeom = fishnet::OGRGeometryAdapter::toOGR(settlement.getGeometry());
+                if(ogrGeom->transform(this->toMetric) != OGRERR_NONE){
+                    return std::unexpected("Failed to transform settlement geometry to metric projection for settlement with ID: " + settlement.getAttribute(IDField).transform([](auto val){ return std::to_string(val); }).value_or("unknown"));
+                }
+                GeometryPtr buffered {ogrGeom->Buffer(initialBufferDistance)};
+                if (buffered == nullptr) {
+                    return std::unexpected("Buffering failed for settlement with ID: " + settlement.getAttribute(IDField).transform([](auto val){ return std::to_string(val); }).value_or("unknown"));
+                }
+                settlementPolygons.push_back(std::move(buffered));
+            }
+            OGRGeometryCollection bufferedCollection;
+            for(const auto & geom: settlementPolygons){
+                bufferedCollection.addGeometry(geom.get());
+            }
+            GeometryPtr merged {bufferedCollection.UnaryUnion()->Buffer(targetBufferDistance - initialBufferDistance)}; // erode the union of buffered settlements
+            if(merged == nullptr){
+                return std::unexpected("Failed to merge and erode settlement polygons for cluster");
+            }
+            if(merged->transform(this->toSrc) != OGRERR_NONE){
+                return std::unexpected("Failed to transform merged settlement geometry back to source projection");
+            }
+            OGRGeometryCollection finalCollection;
+            std::vector<GeometryPtr> mstEdges;
+            for(auto nodeID: mstNodeIDs){
+                auto it = idToMSTEdges.find(nodeID);
+                if (it == idToMSTEdges.end()) {
+                    continue; // No edges for this node
+                }
+                for(const auto & edge: it->second){
+                    auto ogrEdge = fishnet::OGRGeometryAdapter::toOGR(edge);
+                    mstEdges.push_back(std::move(ogrEdge));
+                    finalCollection.addGeometry(mstEdges.back().get());
                 }
             }
-            double computed_alpha = sqrt(1.0 / static_cast<double>(fishnet::util::size(geometry.getPolygons())));
-            double alpha = std::max(min_alpha, computed_alpha);
-
-            OGRGeometry* hullPtr = multiPoint.ConcaveHull(alpha, true);
-            if (hullPtr == nullptr || hullPtr->toPolygon() == nullptr) {
-                OGRGeometry* fallback = multiPoint.ConvexHull();
-                if (hullPtr) { OGRGeometryFactory::destroyGeometry(hullPtr); }
-                hullPtr = fallback;
+            finalCollection.addGeometry(merged.get());
+            auto ogrResult = fishnet::OGRGeometryAdapter::fromOGR(*finalCollection.UnaryUnion()->toPolygon(),true);
+            if(not ogrResult){
+                return std::unexpected("Failed to convert final merged geometry to fishnet Polygon");
             }
-            if (hullPtr == nullptr) {
-                spdlog::warn("No concave hull found for feature {}", geometry.toString());
+            return ogrResult.value();
+        }
+    };
+
+public: 
+    SettlementVisualization(double initialBufferDistance, double targetBufferDistance)
+        : Task("SettlementVisualization"), initialBufferDistance(initialBufferDistance), targetBufferDistance(targetBufferDistance) {}
+
+    void operator()(const fishnet::AbstractVectorFile & settlementFile, const fishnet::AbstractVectorFile & mstFile) const {
+        auto idToMSTEdges = mstEdges(mstFile);
+        auto inputLayer = fishnet::VectorIO::read<SettlementShape_t>(settlementFile);
+        auto outputLayer = fishnet::VectorIO::emptyCopy<ResultShape_t>(inputLayer);
+        auto clusteredSettlements = clusterSettlements(std::move(inputLayer));
+        auto IDField = outputLayer.getSizeField(Task::FISHNET_ID_FIELD).value_or_throw();
+        auto clusterField = outputLayer.getSizeField(Africapolis::CLUSTER_ID_FIELD).value_or_throw();
+        auto geometryHasher = std::hash<ResultShape_t>();
+        for (auto && [clusterID, settlements] : clusteredSettlements) {
+            if(clusterID == Africapolis::NOISE_CLUSTER_ID){
+                for (auto && settlement : settlements) {
+                    auto feature = fishnet::Feature<ResultShape_t>(settlement.getGeometry());
+                    feature.copyAttributes(settlement);
+                    outputLayer.addFeature(std::move(feature));
+                }
                 continue;
             }
-
-            // Compute centroid for azimuthal equidistant projection center
-            auto centroid = geometry.centroid();
-            double lon = centroid.x;
-            double lat = centroid.y;
-
-            // Step d: Buffer the building polygons by the configured distance in meters
-            auto ogrMulti = fishnet::OGRGeometryAdapter::toOGR(geometry);
-            OGRGeometry * bufferedPtr = bufferInMeters(ogrMulti.get(), buffer_distance, lon, lat);
-            if (bufferedPtr == nullptr) {
-                spdlog::warn("Buffering failed for feature {}; using concave hull only", geometry.toString());
-                auto resultGeom = extractPolygon(hullPtr);
-                OGRGeometryFactory::destroyGeometry(hullPtr);
-                if (not resultGeom) continue;
-                auto feature = fishnet::Feature<Polygon_t>(resultGeom.value());
-                feature.copyAttributes(multiPolygonFeature);
-                feature.setAttribute(field, alpha);
-                outputLayer.addFeature(std::move(feature));
+            // Collect the MST node IDs for this cluster
+            std::vector<size_t> clusterMSTNodeIDs;
+            for(const auto & settlement: settlements) {
+                auto settlementID = settlement.getAttribute(IDField).value_or_throw();
+                clusterMSTNodeIDs.push_back(settlementID);
+            }
+            // Visualize the cluster using the already buffered MST edges and the buffering + eroding settlement polygons
+            auto result = VisualizeCluster(initialBufferDistance, targetBufferDistance, createAzimuthalEquidistant(settlements), inputLayer.getSpatialReference())
+                .operator()(settlements, idToMSTEdges, clusterMSTNodeIDs, IDField);
+            if ( not result){
+                spdlog::warn("Failed to visualize cluster {}: {}", clusterID, result.error());
                 continue;
             }
-
-            // Step e: Merge settlement polygon (concave hull) and buffered building polygons (OGR space)
-            OGRGeometry * mergedPtr = hullPtr->Union(bufferedPtr);
-            OGRGeometryFactory::destroyGeometry(hullPtr);
-            OGRGeometryFactory::destroyGeometry(bufferedPtr);
-
-            auto mergedGeometry = extractPolygon(mergedPtr);
-            OGRGeometryFactory::destroyGeometry(mergedPtr);
-
-            if (not mergedGeometry) {
-                spdlog::warn("Union failed for feature {}; skipping", geometry.toString());
-                continue;
-            }
-
-            auto feature = fishnet::Feature<Polygon_t>(mergedGeometry.value());
-            feature.copyAttributes(multiPolygonFeature);
-            feature.setAttribute(field, alpha);
+            auto feature = fishnet::Feature<ResultShape_t>(result.value());
+            feature.setAttribute(clusterField, clusterID);
+            feature.setAttribute(IDField, geometryHasher(feature.getGeometry()));
             outputLayer.addFeature(std::move(feature));
         }
-        auto outputPath = fishnet::util::PathHelper::appendToFilename(inputFile.getPath(), "_concave_hull").filename();
+        auto outputPath = fishnet::util::PathHelper::appendToFilename(settlementFile.getPath(), "_concave_hull").filename();
         fishnet::VectorIO::overwrite(outputLayer, fishnet::AbstractVectorFile(outputPath));
     }
 };
@@ -196,15 +186,17 @@ public:
 
 int main(int argc, char* argv[]) {
     using namespace fishnet::geometry;
-    CLI::App app{"AfricapolisPolygonOutline"};
-    std::string inputFilename;
-    double min_alpha=.3;
-    double buffer_distance = 30.0;
-    app.add_option("-i,--input", inputFilename, "Path to input shape file")->required()->check(CLI::ExistingFile);
-    app.add_option("--alpha",min_alpha, "Alpha parameter for concave hull")->required()->check(CLI::Range(0.0,1.0));
-    app.add_option("--buffer", buffer_distance, "Buffer distance in meters for building polygons [default: 30.0]")->check(CLI::PositiveNumber);
+    CLI::App app{"AfricapolisSettlementOutline"};
+    std::string settlementFile;
+    std::string mstFile;
+    double initialBufferDistance;
+    double targetBufferDistance;
+    app.add_option("-i,--input", settlementFile, "Path to input shape file")->required()->check(CLI::ExistingFile);
+    app.add_option("-m,--mst",mstFile, "Path to input MST shape file")->required()->check(CLI::ExistingFile); 
+    app.add_option("--buffer", targetBufferDistance, "Buffer distance in meters for settlement polygons")->required()->check(CLI::PositiveNumber);
+    app.add_option("--initial-buffer", initialBufferDistance, "Initial buffer distance in meters for settlement polygons before erosion to target buffer distance")->check(CLI::PositiveNumber)->default_val(100.0);
     CLI11_PARSE(app, argc, argv);
-    OutlineVisualization outlineVisualization(min_alpha, buffer_distance);
-    outlineVisualization(inputFilename);
-    return 0;
+    SettlementVisualization outlineVisualization(initialBufferDistance, targetBufferDistance);
+    outlineVisualization(settlementFile,mstFile);
+    return 0; 
 }
