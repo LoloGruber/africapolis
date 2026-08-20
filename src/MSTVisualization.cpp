@@ -13,6 +13,7 @@
 #include <fishnet/PathHelper.h>
 #include <fishnet/WGS84Ellipsoid.hpp>
 #include <fishnet/MSTAlgorithm.hpp>
+#include "AfricapolisConstants.hpp"
 
 
 class MSTVisualization: public Task {
@@ -128,23 +129,37 @@ public:
                 SettlementShapeDeserializer<Shapetype>{std::move(nodes)}
             )
         );
+        spdlog::debug("Computing subgraphs for the settlement graph with {} nodes and {} edges", fishnet::util::size(graph.getNodes()), fishnet::util::size(graph.getEdges()));
         auto subgraphs = fishnet::graph::BFS::subgraphs(graph,[](){return fishnet::graph::GraphFactory::UndirectedGraph<SettlementType>();});
         auto p2pDistance = distanceFunctionForSpatialReference(spatialRef);
         auto edgeDistance = [&p2pDistance](const SettlementType & lhs, const SettlementType & rhs){return fishnet::geometry::shapeDistance(lhs,rhs,p2pDistance);};
-        std::vector<fishnet::geometry::Segment<double>> edges;
+
+        struct EdgeKeys {
+            size_t from;
+            size_t to;
+        };
+        spdlog::debug("Computing MST for subgraphs");
+        std::vector<std::pair<fishnet::geometry::Segment<double>, EdgeKeys>> edges;
         for(const auto & subgraph: subgraphs){
             auto mst = fishnet::graph::MST::kruskal(subgraph,edgeDistance).value_or_throw("Failed to compute MST for subgraph");
             for(const auto & edge: mst.getEdges()){
                 auto [lhs, rhs] = fishnet::geometry::closestPoints(edge.getFrom(),edge.getTo());
                 if(lhs == rhs)
                     continue;
-                edges.emplace_back(lhs,rhs);
+                edges.emplace_back(fishnet::geometry::Segment<double>{lhs,rhs}, EdgeKeys{edge.getFrom().key(), edge.getTo().key()});
             }
         }
+        spdlog::debug("Visualizing {} MST edges with a buffer of {} meters", edges.size(), bufferInMeters);
         auto outputLayer = fishnet::VectorIO::empty<EdgeGeometryType>(spatialRef);
-        auto bufferedEdges = bufferEdges(edges, spatialRef);
-        for (const auto & edgePolygon : bufferedEdges) {
-            outputLayer.addFeature(fishnet::Feature<EdgeGeometryType>(edgePolygon));
+        auto fromField = outputLayer.addSizeField(Africapolis::FROM_ID_FIELD).value_or_throw();
+        auto toField = outputLayer.addSizeField(Africapolis::TO_ID_FIELD).value_or_throw();
+        auto bufferedEdges = bufferEdges(edges | std::views::keys, spatialRef);
+        for (auto && [idx,edgePolygon] : bufferedEdges | std::views::enumerate) {
+            auto index = static_cast<size_t>(idx);
+            fishnet::Feature<EdgeGeometryType> feature(edgePolygon);
+            feature.addAttribute(fromField, edges[index].second.from);
+            feature.addAttribute(toField, edges[index].second.to);
+            outputLayer.addFeature(std::move(feature));
         }
         auto outputExtension = std::filesystem::path(geometryFiles.front()).extension().string();
         fishnet::VectorIO::overwrite(outputLayer, fishnet::AbstractVectorFile(outputStem+"_mst"+outputExtension));
@@ -157,10 +172,15 @@ int main(int argc, char *argv[]){
     std::string graphFile;
     std::string outputStem;
     double bufferInMeters;
+    bool debug = false;
     app.add_option("-i,--inputs",geometryFiles,"Shapefiles storing the polygons with id")->required()->each(CLI::ExistingFile);
     app.add_option("-g,--graph",graphFile,"Input binary file storing the settlement graph adjacency")->required()->check(CLI::ExistingFile);
     app.add_option("-o", outputStem, "Output filename stem for storing the clustered shapefile");
     app.add_option("-b,--buffer", bufferInMeters, "Buffer size in meters")->default_val(30.0);
+    app.add_option("--debug", debug, "Enable debug logging")->default_val(false);
+    if(debug){
+        spdlog::set_level(spdlog::level::debug);
+    }
     CLI11_PARSE(app, argc, argv);
     MSTVisualization task(geometryFiles, fishnet::util::PathHelper::absoluteCanonical(graphFile), bufferInMeters, outputStem);
     task.run();
