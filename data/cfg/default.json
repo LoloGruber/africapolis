@@ -17,9 +17,6 @@
             "type": "ApproxAreaFilter",
             "required-area": 1000.0
 
-        },
-        {
-            "type": "InsidePolygonFilter"
         }
     ]
 }
