@@ -13,6 +13,7 @@
 #include <fishnet/PathHelper.h>
 #include "BinarySettlementGraphAdjacency.hpp"
 #include "ObservableVectorFileReader.hpp"
+#include "AfricapolisConstants.hpp"
 
 
 enum class ClusterMode {
@@ -126,20 +127,22 @@ public:
         auto result = clusterAlgorithm(graph);
 
         // Store result
-        using OutputShapeType = fishnet::geometry::MultiPolygon<ShapeType>;
-        auto outputLayer = fishnet::VectorIO::empty<OutputShapeType>(spatialRef);
+        auto outputLayer = fishnet::VectorIO::empty<ShapeType>(spatialRef);
         auto idField = outputLayer.addSizeField(Task::FISHNET_ID_FIELD).value_or_throw();
-        auto mergeFunction = IDReduceFunction();
+        auto clusterField = outputLayer.addSizeField(Africapolis::CLUSTER_ID_FIELD).value_or_throw();
         for(auto && cluster : result.clusters){
-            auto settlementMultiPolygon = mergeFunction(cluster);
-            auto id = settlementMultiPolygon.key();
-            fishnet::Feature<OutputShapeType> feature(settlementMultiPolygon.geometry());
-            feature.setAttribute(idField, size_t(id));
-            outputLayer.addFeature(std::move(feature));
+            size_t clusterID = std::ranges::fold_left(cluster, 0, [](size_t current, const auto & settlement){ return current + settlement.key(); });
+            for(auto && settlement : cluster){
+                auto feature = fishnet::Feature<ShapeType>(settlement.geometry());
+                feature.setAttribute(idField, settlement.key());
+                feature.setAttribute(clusterField, clusterID);
+                outputLayer.addFeature(std::move(feature));
+            }
         }
         for(auto && noise : result.noise){
-            fishnet::Feature<OutputShapeType> feature(OutputShapeType(noise.geometry()));
-            feature.setAttribute(idField, size_t(9999999999999));
+            fishnet::Feature<ShapeType> feature(noise.geometry());
+            feature.setAttribute(idField, noise.key());
+            feature.setAttribute(clusterField, Africapolis::NOISE_CLUSTER_ID);
             outputLayer.addFeature(std::move(feature));
         }
         auto extension = (*std::ranges::begin(vectorFiles)).getPath().extension().string();
