@@ -9,6 +9,7 @@
 #include <fishnet/VectorIO.hpp>
 #include "BinarySettlementGraphAdjacency.hpp"
 #include "ObservableVectorFileReader.hpp"
+#include "fishnet/CollectionConcepts.hpp"
 #include <fishnet/PathHelper.h>
 #include <fishnet/WGS84Ellipsoid.hpp>
 #include <fishnet/MSTAlgorithm.hpp>
@@ -20,13 +21,101 @@ class MSTVisualization: public Task {
     std::string outputStem;
     double bufferInMeters;
 
+    using EdgeGeometryType = fishnet::geometry::SimplePolygon<double>;
+
+    std::vector<EdgeGeometryType> bufferEdges(fishnet::util::forward_range_of<fishnet::geometry::Segment<double>> auto && edges, const OGRSpatialReference & spatialRef) const {
+        // Compute the centroid of all edge endpoints to center the Azimuthal Equidistant projection
+        double avgX = 0.0, avgY = 0.0;
+        size_t count = 0;
+        for (const auto & edge : edges) {
+            avgX += edge.p().x + edge.q().x;
+            avgY += edge.p().y + edge.q().y;
+            count += 2;
+        }
+        double centerLon = count > 0 ? avgX / static_cast<double>(count) : 0.0;
+        double centerLat = count > 0 ? avgY / static_cast<double>(count) : 0.0;
+
+        // Create a single Azimuthal Equidistant projection centered on the dataset
+        OGRSpatialReference metricRef;
+        metricRef.SetAE(centerLat, centerLon, 0.0, 0.0);
+
+        OGRCoordinateTransformation * toMetric = OGRCreateCoordinateTransformation(&spatialRef, &metricRef);
+        OGRCoordinateTransformation * toOriginal = OGRCreateCoordinateTransformation(&metricRef, &spatialRef);
+
+        if (toMetric == nullptr || toOriginal == nullptr) {
+            OCTDestroyCoordinateTransformation(toMetric);
+            OCTDestroyCoordinateTransformation(toOriginal);
+            spdlog::warn("Failed to create coordinate transformations for buffering. Skipping all edges.");
+            return {};
+        }
+
+        std::vector<EdgeGeometryType> bufferedEdges;
+        for (const auto & edge: edges) {
+            // Create OGRLineString from segment endpoints
+            OGRLineString ogrLine;
+            ogrLine.addPoint(edge.p().x, edge.p().y);
+            ogrLine.addPoint(edge.q().x, edge.q().y);
+
+            // Clone and transform to metric CRS
+            OGRGeometry * cloned = ogrLine.clone();
+            if (cloned == nullptr) {
+                spdlog::warn("Failed to clone segment geometry. Skipping edge.");
+                continue;
+            }
+
+            if (cloned->transform(toMetric) != OGRERR_NONE) {
+                OGRGeometryFactory::destroyGeometry(cloned);
+                spdlog::warn("Failed to transform segment to metric CRS. Skipping edge.");
+                continue;
+            }
+
+            // Buffer in metric space
+            OGRGeometry * buffered = cloned->Buffer(bufferInMeters, 30);
+            OGRGeometryFactory::destroyGeometry(cloned);
+
+            if (buffered == nullptr) {
+                spdlog::warn("Buffer operation failed for segment. Skipping edge.");
+                continue;
+            }
+
+            // Transform back to original CRS
+            if (buffered->transform(toOriginal) != OGRERR_NONE) {
+                OGRGeometryFactory::destroyGeometry(buffered);
+                spdlog::warn("Failed to transform buffered segment back to original CRS. Skipping edge.");
+                continue;
+            }
+
+            // Convert buffered OGR geometry to fishnet SimplePolygon
+            const OGRPolygon * ogrPolygon = buffered->toPolygon();
+            if (ogrPolygon == nullptr) {
+                OGRGeometryFactory::destroyGeometry(buffered);
+                spdlog::warn("Buffered geometry is not a polygon. Skipping edge.");
+                continue;
+            }
+
+            auto ringOpt = fishnet::OGRGeometryAdapter::fromOGR(*ogrPolygon->getExteriorRing());
+            OGRGeometryFactory::destroyGeometry(buffered);
+
+            if (not ringOpt) {
+                spdlog::warn("Failed to convert buffered exterior ring to fishnet Ring. Skipping edge.");
+                continue;
+            }
+
+            bufferedEdges.emplace_back(ringOpt.value());
+        }
+
+        OCTDestroyCoordinateTransformation(toMetric);
+        OCTDestroyCoordinateTransformation(toOriginal);
+
+        return bufferedEdges;
+    }
+
 public:
     MSTVisualization(const std::vector<std::string> & geometryFiles, std::filesystem::path graphFile, double bufferInMeters, const std::string & outputStem):Task("MSTVisualization"), geometryFiles(geometryFiles), graphFile(std::move(graphFile)), outputStem(outputStem), bufferInMeters(bufferInMeters){}
 
     void run() {
         using Shapetype = fishnet::geometry::Polygon<double>;
         using SettlementType = SettlementShape<Shapetype>;
-        using EdgeGeometryType = fishnet::geometry::SimplePolygon<double>;
         OGRSpatialReference spatialRef;
         const auto reader = ObservableVectorFileReader<Shapetype>([&spatialRef](const fishnet::VectorLayer<Shapetype> & layer){spatialRef = layer.getSpatialReference();});
         auto nodes = SettlementType::read<fishnet::AbstractVectorFile>(
@@ -42,15 +131,23 @@ public:
         auto subgraphs = fishnet::graph::BFS::subgraphs(graph,[](){return fishnet::graph::GraphFactory::UndirectedGraph<SettlementType>();});
         auto p2pDistance = distanceFunctionForSpatialReference(spatialRef);
         auto edgeDistance = [&p2pDistance](const SettlementType & lhs, const SettlementType & rhs){return fishnet::geometry::shapeDistance(lhs,rhs,p2pDistance);};
-        auto outputLayer = fishnet::VectorIO::empty<EdgeGeometryType>(spatialRef);
+        std::vector<fishnet::geometry::Segment<double>> edges;
         for(const auto & subgraph: subgraphs){
             auto mst = fishnet::graph::MST::kruskal(subgraph,edgeDistance).value_or_throw("Failed to compute MST for subgraph");
             for(const auto & edge: mst.getEdges()){
-                //TODO visualize edge buffered line with width = this->bufferInMeters
+                auto [lhs, rhs] = fishnet::geometry::closestPoints(edge.getFrom(),edge.getTo());
+                if(lhs == rhs)
+                    continue;
+                edges.emplace_back(lhs,rhs);
             }
         }
+        auto outputLayer = fishnet::VectorIO::empty<EdgeGeometryType>(spatialRef);
+        auto bufferedEdges = bufferEdges(edges, spatialRef);
+        for (const auto & edgePolygon : bufferedEdges) {
+            outputLayer.addFeature(fishnet::Feature<EdgeGeometryType>(edgePolygon));
+        }
         auto outputExtension = std::filesystem::path(geometryFiles.front()).extension().string();
-        fishnet::VectorIO::overwrite(outputLayer, fishnet::AbstractVectorFile(outputStem+"_edges"+outputExtension));
+        fishnet::VectorIO::overwrite(outputLayer, fishnet::AbstractVectorFile(outputStem+"_mst"+outputExtension));
     }
 };
 
