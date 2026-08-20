@@ -188,7 +188,7 @@ public:
             feature.setAttribute(field, alpha);
             outputLayer.addFeature(std::move(feature));
         }
-        auto outputPath = fishnet::util::PathHelper::appendToFilename(inputFile.getPath(), "_concave_hull");
+        auto outputPath = fishnet::util::PathHelper::appendToFilename(inputFile.getPath(), "_concave_hull").filename();
         fishnet::VectorIO::overwrite(outputLayer, fishnet::AbstractVectorFile(outputPath));
     }
 };
