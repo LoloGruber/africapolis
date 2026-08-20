@@ -1,6 +1,6 @@
 cwlVersion: v1.2
 class: CommandLineTool
-baseCommand: [AfricapolisEdgeVisualization]
+baseCommand: [AfricapolisMSTVisualization]
 hints:
   DockerRequirement:
     dockerPull: logru/africapolis:latest
@@ -27,8 +27,8 @@ inputs:
         inputBinding:
             prefix: "-o"
 outputs:
-    edgeShapefile:
+    mstShapefile:
         type: File
         secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
         outputBinding:
-            glob: $(inputs.outputStem + "_edges.shp")
+            glob: $(inputs.outputStem + "_mst.shp")
