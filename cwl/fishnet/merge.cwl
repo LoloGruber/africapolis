@@ -1,6 +1,6 @@
 cwlVersion: v1.2
 class: CommandLineTool
-baseCommand: [FishnetShapefileMerger]
+baseCommand: [FishnetVectorFileMerger]
 hints:
   DockerRequirement:
     dockerPull: logru/fishnet-apps:1.3.1
@@ -10,27 +10,25 @@ requirements:
     coresMin: 1
     ramMin: 1000
 inputs:
-  shpFiles:
+  vectorFiles:
     type: File[]
-    secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
-    # format: SHP
+    # format: GPKG
     inputBinding:
         prefix: -i
-    doc: "List of input shapefiles, with their required secondary files (.dbf, .shx, .prj)"
+    doc: "List of input vector files, with their required secondary files (.dbf, .shx, .prj)"
   outputPath:
     type: string
     inputBinding:
         position: 2
         prefix: -o 
-        valueFrom: $(self+".shp")
-    doc: "Output filename for result (Shapefile)"  
+        valueFrom: $(self+".gpkg")
+    doc: "Output filename for result (Vectorfile)"  
 outputs:
   mergedOutput:
     type: File
-    secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
-    # format: SHP
+    # format: GPKG
     outputBinding:
-        glob: "$(inputs.outputPath).shp"
+        glob: "$(inputs.outputPath).gpkg"
     doc: "Merged output file"
 stdout: MERGE_stdout.log
 stderr: MERGE_stderr.log

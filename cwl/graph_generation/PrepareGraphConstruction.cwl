@@ -5,10 +5,9 @@ requirements:
     types: 
     - $import: ../types/GraphConstructionWorkload.yaml
 inputs:
-    shapefiles: 
+    vectorFiles: 
         type: File[]
-        secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
-        # format: SHP
+        # format: GPKG
     filenamePrefix: string?
 outputs: 
     graph_construction_workload:
@@ -41,9 +40,9 @@ expression: |
         }
         throw new Error("Could not parse grid coordinates from filename \""+filename+"\" with prefix \""+prefix+"\"");
     }
-    function neighbouringShapefiles(shapefiles, prefix){
+    function neighbouringVectorFiles(vectorFiles, prefix){
         const shapefileCoordinateMap = {};
-        shapefiles.forEach(s => {
+        vectorFiles.forEach(s => {
             const nameroot = s.nameroot;
             const coordinate = shapefileObjectToCoordinate(nameroot,prefix);
             shapefileCoordinateMap[coordinate] = s;
@@ -68,6 +67,6 @@ expression: |
         });
     }
     // TODO make it work even when no prefix is given
-    const result = neighbouringShapefiles(inputs.shapefiles,inputs.filenamePrefix);
+    const result = neighbouringVectorFiles(inputs.vectorFiles,inputs.filenamePrefix);
     return {"graph_construction_workload":result};
     }

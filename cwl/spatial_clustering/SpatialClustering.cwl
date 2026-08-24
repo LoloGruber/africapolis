@@ -15,19 +15,16 @@ inputs:
     doc: "Object containing the json workload definition and the graph file"
   files: 
     type: File[]
-    secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
-    # format: SHP
-    doc: "List of shapefiles to be used for assigning the workload for the clustering"
+    # format: GPKG
+    doc: "List of vector files to be used for assigning the workload for the clustering"
 outputs:
   clusteredOutput:
     type: File
-    secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
-    # format: SHP
+    # format: GPKG
     outputSource: clustering/clusteredOutput
   clusterMSTs:
     type: File
-    secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
-    # format: SHP
+    # format: GPKG
     outputSource: mstVisualization/mstShapefile
 steps:
     prepare_cluster_workload:
@@ -38,9 +35,8 @@ steps:
                     type: ../types/ComponentsOutput.yaml#ComponentsOutput
                 files: 
                     type: File[]
-                    secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
-                    # format: SHP
-                    doc: "List of shapefiles to be used for assigning the workload for the clustering step"
+                    # format: GPKG
+                    doc: "List of vector files to be used for assigning the workload for the clustering step"
             outputs:
                 clusterWorkload:
                     type: ../types/ClusterWorkload.yaml#ClusterWorkload
@@ -55,7 +51,7 @@ steps:
                         });
                     let result = {
                         graphBinary: inputs.workload.graphBinary,
-                        shpFiles: files
+                        vectorFiles: files
                     };
                     return {
                         clusterWorkload: result,
@@ -71,7 +67,7 @@ steps:
         clusterWorkload: prepare_cluster_workload/clusterWorkload
         geometryFiles:
           source: prepare_cluster_workload/clusterWorkload
-          valueFrom: $(inputs.clusterWorkload.shpFiles)
+          valueFrom: $(inputs.clusterWorkload.vectorFiles)
         graphFile: 
           source: prepare_cluster_workload/clusterWorkload
           valueFrom: $(inputs.clusterWorkload.graphBinary)
@@ -87,9 +83,9 @@ steps:
         graphBinary:
           source: prepare_cluster_workload/clusterWorkload
           valueFrom: $(inputs.clusterWorkload.graphBinary)
-        shpFiles: 
+        vectorFiles: 
           source: prepare_cluster_workload/clusterWorkload
-          valueFrom: $(inputs.clusterWorkload.shpFiles)
+          valueFrom: $(inputs.clusterWorkload.vectorFiles)
         outputStem:
           source: prepare_cluster_workload/clusterWorkload
           valueFrom: $("Clustered_"+ inputs.clusterWorkload.graphBinary.nameroot)

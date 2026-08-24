@@ -27,6 +27,7 @@ inputs:
 
   vectorFile:
     type: File?
+    # format: GPKG
     inputBinding:
       prefix: --input
     doc: "Input GeoPackage file (no secondary files required)"

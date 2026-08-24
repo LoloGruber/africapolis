@@ -12,10 +12,14 @@ requirements:
     - $import: types/GraphConstructionWorkload.yaml
 inputs:
   shapefile:
-    type: File
+    type: File?
     secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
     # format: SHP
     doc: "Input file to Africapolis workflow"
+  vectorFile:
+    type: File?
+    # format: GPKG
+    doc: "Input GeoPackage file to Africapolis workflow"
   configFile:
     type: File
     # format: JSON
@@ -27,41 +31,35 @@ inputs:
 outputs:
   africapolis:
     type: File
-    secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
-    # format: SHP
+    # format: GPKG
     outputSource: mergeConcaveHulls/mergedOutput
   multi_polygons:
     type: File
-    secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
-    # format: SHP
+    # format: GPKG
     outputSource: mergeMultiPolygons/mergedOutput
-  edges:
-    type: File
-    secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
-    # format: SHP
-    outputSource: mergeEdges/mergedOutput
 steps:
   split:
     run: fishnet/split.cwl
     in:
       shapefile: shapefile
+      vectorFile: vectorFile
       depth: partitionDepth
-    out: [split_shapefiles]
+    out: [split_files]
   filter:
     run: fishnet/filter.cwl
     in:
-      shapefile: split/split_shapefiles
+      vectorFile: split/split_files
       config: configFile
       skipFilter: 
         valueFrom: $(true)
-    scatter: [shapefile]
-    out: [filtered_shapefile]
+    scatter: [vectorFile]
+    out: [filteredVectorFile]
   graph_generation:
     run: graph_generation/GraphGeneration.cwl
     in: 
-      shapefiles: filter/filtered_shapefile
+      vectorFiles: filter/filteredVectorFile
       filenamePrefix: 
-        source: shapefile
+        source: vectorFile
         valueFrom: $(self.nameroot)
       config: configFile
     out: [graphBinaries]
@@ -76,47 +74,39 @@ steps:
     in: 
       workload: graph_components/componentsOutput
       config: configFile
-      files: filter/filtered_shapefile
+      files: filter/filteredVectorFile
     scatter: [workload]
     scatterMethod: dotproduct
     out: [clusteredOutput, clusterMSTs]
   visualization:
     run: OutlineVisualization.cwl
     in:
-      shapefile: clustering/clusteredOutput
+      vectorFile: clustering/clusteredOutput
       mstFile: clustering/clusterMSTs
-    scatter: [shapefile, mstFile]
+    scatter: [vectorFile, mstFile]
     scatterMethod: dotproduct
-    out: [outputShapefile]
+    out: [outlineVectorFile]
   postFilter:
     run: fishnet/filter.cwl
     in:
-      shapefile: visualization/outputShapefile
+      vectorFile: visualization/outlineVectorFile
       config: configFile
-    scatter: [shapefile]
-    out: [filtered_shapefile]
+    scatter: [vectorFile]
+    out: [filteredVectorFile]
   mergeMultiPolygons:
     run: fishnet/merge.cwl
     in:
-      shpFiles: clustering/clusteredOutput
+      vectorFiles: clustering/clusteredOutput
       outputPath:
-        source: shapefile
+        source: vectorFile
         valueFrom: $("./"+self.nameroot+"_Africapolis_MultiPolygons")
-    out: [mergedOutput]
-  mergeEdges:
-    run: fishnet/merge.cwl
-    in:
-      shpFiles: clustering/clusterMSTs
-      outputPath:
-        source: shapefile
-        valueFrom: $("./"+self.nameroot+"_Africapolis_MST")
     out: [mergedOutput]
   mergeConcaveHulls:
     run: fishnet/merge.cwl
     in:
-      shpFiles: postFilter/filtered_shapefile
+      vectorFiles: postFilter/filteredVectorFile
       outputPath:
-        source: shapefile
+        source: vectorFile
         valueFrom: $("./"+self.nameroot+"_Africapolis")
     out: [mergedOutput]
 

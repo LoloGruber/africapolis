@@ -12,19 +12,17 @@ requirements:
 inputs:
   primaryInput:
     type: File
-    secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
-    # # format: SHP
+    # # format: GPKG
     inputBinding:
         prefix: -i
-    doc: "Primary input, supplied as shapefile object"
+    doc: "Primary input, supplied as vector file object"
   additionalInput:
     type: File[]
-    secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
     default: []
-    # format: SHP
+    # format: GPKG
     inputBinding:
         prefix: -a
-    doc: "List of additional input shapefiles in proximity to the primary input, with their required secondary files (.dbf, .shx, .prj)"
+    doc: "List of additional input vector files in proximity to the primary input, with their required secondary files (.dbf, .shx, .prj)"
   config:
     type: File
     inputBinding:

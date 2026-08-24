@@ -12,8 +12,7 @@ requirements:
 inputs:
     geometryFiles:
         type: File[]
-        secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
-        doc: "Input shapefiles to visualize the edges of the graph"
+        doc: "Input vector files to visualize the edges of the graph"
         inputBinding:
             prefix: "-i"
     graphFile:
@@ -23,14 +22,13 @@ inputs:
             prefix: "-g"
     outputStem:
         type: string
-        doc: "Output stem for the output shapefile"
+        doc: "Output stem for the output vector file"
         inputBinding:
             prefix: "-o"
 outputs:
     mstShapefile:
         type: File
-        secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
         outputBinding:
-            glob: $(inputs.outputStem + "_mst.shp")
+            glob: $(inputs.outputStem + "_mst.gpkg")
 stdout: $(inputs.outputStem + "_mst.log")
 stderr: $(inputs.outputStem + "_mst.err")

@@ -1,6 +1,6 @@
 cwlVersion: v1.2
 class: CommandLineTool
-baseCommand: [FishnetShapefilePreprocessor]
+baseCommand: [FishnetVectorFilePreprocessor]
 hints:
   DockerRequirement:
     dockerPull: logru/fishnet-apps:1.3.1
@@ -10,10 +10,9 @@ requirements:
     coresMin: 1
     ramMin: 250
 inputs:
-  shapefile:
+  vectorFile:
     type: File
-    secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
-    # format: SHP
+    # format: GPKG
     inputBinding:
       prefix: --input
   config:
@@ -29,11 +28,10 @@ inputs:
     inputBinding:
       prefix: --no-filter
 outputs:
-  filtered_shapefile:
+  filteredVectorFile:
     type: File
-    secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
-    # format: SHP
+    # format: GPKG
     outputBinding:
-      glob: "*_filtered.shp"  # Gather all files associate with the shapefile
-stdout: FILTER_$(inputs.shapefile.nameroot)_stdout.log
-stderr: FILTER_$(inputs.shapefile.nameroot)_stderr.log
+      glob: "*_filtered.gpkg"  # Gather all files associate with the vector file
+stdout: FILTER_$(inputs.vectorFile.nameroot)_stdout.log
+stderr: FILTER_$(inputs.vectorFile.nameroot)_stderr.log

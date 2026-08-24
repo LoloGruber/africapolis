@@ -8,14 +8,13 @@ requirements:
   - class: ScatterFeatureRequirement
   - class: InlineJavascriptRequirement
 inputs:
-  shapefiles:
+  vectorFiles:
     type: File[]
-    secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
-    # format: SHP
-    doc: "List of shapefiles to be used for graph construction. Each polygon must be associated with a unique FISHNET ID."
+    # format: GPKG
+    doc: "List of vector files to be used for graph construction. Each polygon must be associated with a unique FISHNET ID."
   filenamePrefix:
     type: string?
-    doc: "Prefix used to identify the shapefiles. The prefix is used to extract the grid coordinates from the filenames."
+    doc: "Prefix used to identify the vector files. The prefix is used to extract the grid coordinates from the filenames."
   config:
     type: File
     # format: JSON
@@ -28,7 +27,7 @@ steps:
   prepare_workload:
     run: PrepareGraphConstruction.cwl
     in:
-      shapefiles: shapefiles
+      vectorFiles: vectorFiles
       filenamePrefix: filenamePrefix
     out: [graph_construction_workload]
   generate_graph:

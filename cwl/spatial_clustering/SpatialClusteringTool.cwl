@@ -10,13 +10,12 @@ requirements:
       coresMin: 1
       ramMin: 1000
 inputs:
-  shpFiles:
+  vectorFiles:
     type: File[]
-    secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
-    # format: SHP
+    # format: GPKG
     inputBinding:
         prefix: -i
-    doc: "List of input shapefiles, with their required secondary files (.dbf, .shx, .prj)"
+    doc: "List of input vector files, with their required secondary files (.dbf, .shx, .prj)"
   config:
     type: File
     # format: JSON
@@ -37,10 +36,9 @@ inputs:
 outputs:
   clusteredOutput:
     type: File
-    secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
-    # format: SHP
+    # format: GPKG
     outputBinding:
-        glob: "$(inputs.outputStem).shp"
-    doc: "Clustering output shapefile"
+        glob: "$(inputs.outputStem).gpkg"
+    doc: "Clustering output vector file"
 stdout: CLUSTER_$(inputs.graphBinary.nameroot)_stdout.log
 stderr: CLUSTER_$(inputs.graphBinary.nameroot)_stderr.log

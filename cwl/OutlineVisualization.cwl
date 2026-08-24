@@ -10,16 +10,14 @@ requirements:
     coresMin: 1
     ramMin: 1000
 inputs:
-  shapefile:
+  vectorFile:
     type: File
-    secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
-    # format: SHP
+    # format: GPKG
     inputBinding:
       prefix: -i
   mstFile:
     type: File
-    secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
-    # format: SHP
+    # format: GPKG
     inputBinding:
       prefix: -m
   initialBuffer:
@@ -35,12 +33,11 @@ inputs:
       position: 3
       prefix: --buffer
 outputs:
-  outputShapefile:
+  outlineVectorFile:
     type: File
-    secondaryFiles: [^.shx, ^.dbf, ^.prj, ^.cpg?, ^.qpj?]
-    # format: SHP
+    # format: GPKG
     outputBinding:
-      glob: "*.shp"
-    doc: "Output shapefile with polygon outlines"
-stdout: OUTLINE_$(inputs.shapefile.nameroot)_stdout.log
-stderr: OUTLINE_$(inputs.shapefile.nameroot)_stderr.log
+      glob: "*.gpkg"
+    doc: "Output vector file with polygon outlines"
+stdout: OUTLINE_$(inputs.vectorFile.nameroot)_stdout.log
+stderr: OUTLINE_$(inputs.vectorFile.nameroot)_stderr.log
