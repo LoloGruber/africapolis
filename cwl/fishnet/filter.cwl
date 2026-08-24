@@ -3,7 +3,7 @@ class: CommandLineTool
 baseCommand: [FishnetVectorFilePreprocessor]
 hints:
   DockerRequirement:
-    dockerPull: logru/fishnet-apps:1.3.1
+    dockerPull: logru/fishnet-apps:1.4.0
 requirements:
   InlineJavascriptRequirement: {}
   ResourceRequirement:
