@@ -69,12 +69,14 @@ fi
 INPUT_FILE="$(cd "$(dirname "$INPUT_FILE")" && pwd)/$(basename "$INPUT_FILE")"
 CONFIG_FILE="$(cd "$(dirname "$CONFIG_FILE")" && pwd)/$(basename "$CONFIG_FILE")"
 EXPERIMENT_NAME="$(basename "$INPUT_FILE" .tiff)_$(basename "$CONFIG_FILE" .json)"
+JOB_STORE="$WORKFLOW_DIR/jobstore/"
+rm -rf "$JOB_STORE"
 WORKFLOW_FILE="$WORKFLOW_DIR/cwl/Africapolis.cwl"
 # Create output directory based on input file name and config file name
 OUTPUT_DIR="$WORKFLOW_DIR/output/$EXPERIMENT_NAME"
 mkdir -p "$OUTPUT_DIR"
 cd "$OUTPUT_DIR"
-toil-cwl-runner --singularity --batchSystem slurm  $WORKFLOW_FILE --shapefile "$INPUT_FILE" --configFile "$CONFIG_FILE" --partitionDepth "$DEPTH"
+toil-cwl-runner --singularity --batchSystem slurm --jobStore $JOB_STORE $WORKFLOW_FILE --vectorFile "$INPUT_FILE" --configFile "$CONFIG_FILE" --partitionDepth "$DEPTH"
 if [ $? -eq 0 ]; then
     echo "Workflow execution complete. Output files are located in $OUTPUT_DIR"
 fi
