@@ -1,7 +1,7 @@
 # Africapolis Workflow
 The *Africapolis* Workflow clusters and visualizes urban areas from individual building footprint polygons. It is orchestrated with the [Common Workflow Language (CWL)](https://www.commonwl.org/user_guide/), with each stage being a C++ command line program wrapped with CWL. The implementation depends on the [*Fishnet*](https://github.com/LoloGruber/fishnet.git) framework.
 
-![](doc/Kahama_Output.png)
+![](doc/Kahama_Africapolis.png)
 
 # Installation
 All software dependencies are capsulated in a custom [docker image](https://hub.docker.com/r/logru/africapolis) containing the binaries and the GDAL library which is specified in the CWL files. The workflow can be executed with any CWL-Runner, that supports containerized execution. 
