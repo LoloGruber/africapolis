@@ -34,6 +34,3 @@ outputs:
         outputBinding:
             glob: "*.bin"
             outputEval: $(self[0])
-            
-stdout: GENERATE_GRAPH_$(inputs.primaryInput.nameroot)_stdout.log
-stderr: GENERATE_GRAPH_$(inputs.primaryInput.nameroot)_stderr.log

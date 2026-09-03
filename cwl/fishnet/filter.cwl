@@ -33,5 +33,3 @@ outputs:
     # format: GPKG
     outputBinding:
       glob: "*_filtered.gpkg"  # Gather all files associate with the vector file
-stdout: FILTER_$(inputs.vectorFile.nameroot)_stdout.log
-stderr: FILTER_$(inputs.vectorFile.nameroot)_stderr.log

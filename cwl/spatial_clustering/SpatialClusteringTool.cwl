@@ -40,5 +40,3 @@ outputs:
     outputBinding:
         glob: "$(inputs.outputStem).gpkg"
     doc: "Clustering output vector file"
-stdout: CLUSTER_$(inputs.graphBinary.nameroot)_stdout.log
-stderr: CLUSTER_$(inputs.graphBinary.nameroot)_stderr.log

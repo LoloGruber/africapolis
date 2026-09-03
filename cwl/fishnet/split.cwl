@@ -79,6 +79,3 @@ outputs:
         - "$((inputs.shapefile|| inputs.vectorFile).nameroot)*.shp"
         - "$((inputs.shapefile|| inputs.vectorFile).nameroot)*.gpkg"
     doc: "Split output spatial files (.shp or .gpkg)"
-
-stdout: SPLIT_$((inputs.shapefile|| inputs.vectorFile).nameroot)_stdout.log
-stderr: SPLIT_$((inputs.shapefile|| inputs.vectorFile).nameroot)_stderr.log

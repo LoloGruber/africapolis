@@ -39,5 +39,3 @@ outputs:
     outputBinding:
       glob: "*.gpkg"
     doc: "Output vector file with polygon outlines"
-stdout: OUTLINE_$(inputs.vectorFile.nameroot)_stdout.log
-stderr: OUTLINE_$(inputs.vectorFile.nameroot)_stderr.log

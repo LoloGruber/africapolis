@@ -30,5 +30,3 @@ outputs:
         type: File
         outputBinding:
             glob: $(inputs.outputStem + "_mst.gpkg")
-stdout: $(inputs.outputStem + "_mst.log")
-stderr: $(inputs.outputStem + "_mst.err")

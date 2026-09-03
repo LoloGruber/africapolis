@@ -30,5 +30,3 @@ outputs:
     outputBinding:
         glob: "$(inputs.outputPath).gpkg"
     doc: "Merged output file"
-stdout: MERGE_stdout.log
-stderr: MERGE_stderr.log
