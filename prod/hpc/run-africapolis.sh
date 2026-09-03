@@ -22,18 +22,22 @@ if [ ! -d "$WORKFLOW_DIR" ] || [ "$REINSTALL" = true ]; then
     git clone https://github.com/LoloGruber/africapolis.git
     cp -r africapolis/cwl/ $WORKFLOW_DIR/cwl
     cp -r africapolis/data/input $WORKFLOW_DIR/input
-    cp -r fricapolis/data/cfg $WORKFLOW_DIR/cfg
+    cp -r africapolis/data/cfg $WORKFLOW_DIR/cfg
     cd $WORKFLOW_DIR
     module load python 
     python -m venv venv
     source venv/bin/activate
     pip install toil[cwl]
+    pip install nodeenv
+    nodeenv -p
     echo "Installation complete. You can now run the workflow using the following command:"
     echo "$0 --input <INPUT_FILE> --config <CONFIG_FILE> --partitionDepth <DEPTH>"
     exit 0
 fi
 # Load modules
 module load apptainer
+module load gcc # required by nodejs
+module load squashfs
 source $WORKFLOW_DIR/venv/bin/activate
 # Parse command line arguments
 INPUT_FILE=""
@@ -68,15 +72,19 @@ fi
 # Convert to absolute paths
 INPUT_FILE="$(cd "$(dirname "$INPUT_FILE")" && pwd)/$(basename "$INPUT_FILE")"
 CONFIG_FILE="$(cd "$(dirname "$CONFIG_FILE")" && pwd)/$(basename "$CONFIG_FILE")"
-EXPERIMENT_NAME="$(basename "$INPUT_FILE" .tiff)_$(basename "$CONFIG_FILE" .json)"
-JOB_STORE="$WORKFLOW_DIR/jobstore/"
-rm -rf "$JOB_STORE"
+EXPERIMENT_NAME="$(basename "$INPUT_FILE" .gpkg)_$(basename "$CONFIG_FILE" .json)"
 WORKFLOW_FILE="$WORKFLOW_DIR/cwl/Africapolis.cwl"
+# Setup JobStore directory
+JOB_STORE="$TMPDIR/toil"
+mkdir -p "$JOB_STORE"
+rm -rf "$JOB_STORE"
 # Create output directory based on input file name and config file name
 OUTPUT_DIR="$WORKFLOW_DIR/output/$EXPERIMENT_NAME"
 mkdir -p "$OUTPUT_DIR"
 cd "$OUTPUT_DIR"
-toil-cwl-runner --singularity --batchSystem slurm --jobStore $JOB_STORE $WORKFLOW_FILE --vectorFile "$INPUT_FILE" --configFile "$CONFIG_FILE" --partitionDepth "$DEPTH"
+# Run TOIL CWL workflow
+SLURM_TIME=23:59:59
+toil-cwl-runner --singularity --batchSystem slurm --jobStore $JOB_STORE --doubleMem True --retryCount 2 --slurmTime $SLURM_TIME --writeLogs $WORKFLOW_DIR/log $WORKFLOW_FILE --vectorFile "$INPUT_FILE" --configFile "$CONFIG_FILE" --partitionDepth "$DEPTH"
 if [ $? -eq 0 ]; then
     echo "Workflow execution complete. Output files are located in $OUTPUT_DIR"
 fi
