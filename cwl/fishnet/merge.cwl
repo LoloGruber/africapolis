@@ -8,7 +8,7 @@ requirements:
   InlineJavascriptRequirement: {}
   ResourceRequirement:
     coresMin: 1
-    ramMin: 1000
+    ramMin: 8192
 inputs:
   vectorFiles:
     type: File[]

@@ -7,7 +7,7 @@ hints:
 requirements:
   ResourceRequirement:
     coresMin: 1
-    ramMin: 1000
+    ramMin: 4096
 inputs:
   config:
     type: File
