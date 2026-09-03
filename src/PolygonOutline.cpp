@@ -84,14 +84,19 @@ private:
             OCTDestroyCoordinateTransformation(toSrc);
         }
 
-        fishnet::Either<ResultShape_t, std::string> operator()(
+        fishnet::Either<std::vector<ResultShape_t>, std::string> operator()(
             fishnet::util::forward_range_of<fishnet::Feature<SettlementShape_t>> auto && cluster,
             std::unordered_map<size_t, std::vector<MSTEdge_t>> const & idToMSTEdges,
-            std::vector<size_t> const & mstNodeIDs,
             auto IDField) const
         {
             if (cluster.empty()) {
                 return std::unexpected("Cannot visualize an empty cluster");
+            }
+            // Collect the MST node IDs for this cluster
+            std::vector<size_t> mstNodeIDs;
+            for(const auto & settlement: cluster) {
+                auto settlementID = settlement.getAttribute(IDField).value_or_throw();
+                mstNodeIDs.push_back(settlementID);
             }
             using GeometryPtr = fishnet::OGRGeometryAdapter::OGRUniquePtr<OGRGeometry>;
             std::vector<GeometryPtr> settlementPolygons; // stores transformed and buffered settlement polygons
@@ -131,11 +136,41 @@ private:
                 }
             }
             finalCollection.addGeometry(merged.get());
-            auto ogrResult = fishnet::OGRGeometryAdapter::fromOGR(*finalCollection.UnaryUnion()->toPolygon(),true);
-            if(not ogrResult){
-                return std::unexpected("Failed to convert final merged geometry to fishnet Polygon");
+            GeometryPtr finalUnion {finalCollection.UnaryUnion()};
+            if(finalUnion == nullptr){
+                spdlog::debug("Failed to merge geometry collection: {}", finalCollection.exportToWkt());
+                return std::unexpected("Failed to merge final settlement and MST geometries");
             }
-            return ogrResult.value();
+            std::vector<ResultShape_t> resultPolygons;
+            auto geomType = wkbFlatten(finalUnion->getGeometryType());
+            switch (geomType) {
+                case wkbPolygon: {
+                    auto resultOpt = fishnet::OGRGeometryAdapter::fromOGR(*finalUnion->toPolygon(), true);
+                    if (not resultOpt) {
+                        return std::unexpected("Failed to convert final merged geometry to fishnet Polygon");
+                    }
+                    resultPolygons.push_back(resultOpt.value());
+                    break;
+                }
+                case wkbMultiPolygon: {
+                    auto ogrMultiPolygon = finalUnion->toMultiPolygon();
+                    for (int i = 0; i < ogrMultiPolygon->getNumGeometries(); ++i) {
+                        const OGRGeometry * subGeom = ogrMultiPolygon->getGeometryRef(i);
+                        if (wkbFlatten(subGeom->getGeometryType()) != wkbPolygon) {
+                            return std::unexpected("Sub-geometry of multipolygon is not a polygon");
+                        }
+                        auto resultOpt = fishnet::OGRGeometryAdapter::fromOGR(*subGeom->toPolygon(), true);
+                        if (not resultOpt) {
+                            return std::unexpected("Failed to convert sub-geometry to fishnet Polygon");
+                        }
+                        resultPolygons.push_back(resultOpt.value());
+                    }
+                    break;
+                }
+                default:
+                    return std::unexpected("Final merged geometry is neither a polygon nor a multipolygon");
+            }
+            return resultPolygons;
         }
     };
 
@@ -160,23 +195,21 @@ public:
                 }
                 continue;
             }
-            // Collect the MST node IDs for this cluster
-            std::vector<size_t> clusterMSTNodeIDs;
-            for(const auto & settlement: settlements) {
-                auto settlementID = settlement.getAttribute(IDField).value_or_throw();
-                clusterMSTNodeIDs.push_back(settlementID);
-            }
-            // Visualize the cluster using the already buffered MST edges and the buffering + eroding settlement polygons
-            auto result = VisualizeCluster(initialBufferDistance, targetBufferDistance, createAzimuthalEquidistant(settlements), inputLayer.getSpatialReference())
-                .operator()(settlements, idToMSTEdges, clusterMSTNodeIDs, IDField);
-            if ( not result){
-                spdlog::warn("Failed to visualize cluster {}: {}", clusterID, result.error());
-                continue;
-            }
-            auto feature = fishnet::Feature<ResultShape_t>(result.value());
-            feature.setAttribute(clusterField, clusterID);
-            feature.setAttribute(IDField, geometryHasher(feature.getGeometry()));
-            outputLayer.addFeature(std::move(feature));
+            VisualizeCluster(initialBufferDistance, targetBufferDistance, createAzimuthalEquidistant(settlements), inputLayer.getSpatialReference())
+                .operator()(settlements, idToMSTEdges, IDField)
+                .if_value_or_error(
+                    [&](auto && result){
+                        for(auto && polygon: result){
+                            auto feature = fishnet::Feature<ResultShape_t>(std::move(polygon));
+                            feature.setAttribute(clusterField, clusterID);
+                            feature.setAttribute(IDField, geometryHasher(feature.getGeometry()));
+                            outputLayer.addFeature(std::move(feature));
+                        }
+                    },
+                    [clusterID](auto && error){
+                        spdlog::warn("Failed to visualize cluster {}: {}", clusterID, error);
+                    }
+                );
         }
         auto outputPath = fishnet::util::PathHelper::appendToFilename(settlementFile.getPath(), "_concave_hull").filename();
         fishnet::VectorIO::overwrite(outputLayer, fishnet::AbstractVectorFile(outputPath));
@@ -191,11 +224,16 @@ int main(int argc, char* argv[]) {
     std::string mstFile;
     double initialBufferDistance;
     double targetBufferDistance;
+    bool debug = false;
     app.add_option("-i,--input", settlementFile, "Path to input shape file")->required()->check(CLI::ExistingFile);
     app.add_option("-m,--mst",mstFile, "Path to input MST shape file")->required()->check(CLI::ExistingFile); 
     app.add_option("--buffer", targetBufferDistance, "Buffer distance in meters for settlement polygons")->required()->check(CLI::PositiveNumber);
     app.add_option("--initial-buffer", initialBufferDistance, "Initial buffer distance in meters for settlement polygons before erosion to target buffer distance")->check(CLI::PositiveNumber)->default_val(100.0);
+    app.add_flag("--debug",debug, "Enable debug logging")->default_val(false);
     CLI11_PARSE(app, argc, argv);
+    if(debug){
+        spdlog::set_level(spdlog::level::debug);
+    }
     SettlementVisualization outlineVisualization(initialBufferDistance, targetBufferDistance);
     outlineVisualization(settlementFile,mstFile);
     return 0; 
