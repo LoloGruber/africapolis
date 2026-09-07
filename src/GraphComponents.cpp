@@ -157,7 +157,6 @@ public:
     GraphComponents(GraphComponentsConfig && config, std::vector<std::filesystem::path> binGraphFiles):Task("GraphComponents"), config(std::move(config)), binGraphFiles(std::move(binGraphFiles)){}
 
     void run() {
-        spdlog::set_level(spdlog::level::debug);
         auto [graph, fileIdToPathMap] = readInput();
         spdlog::debug("Input read completed");
         const auto components = fishnet::graph::BFS::connectedComponents(graph).getAsMap();
@@ -206,12 +205,17 @@ int main(int argc, char * argv[]){
     CLI::App app{"AfricapolisGraphComponents"};
     std::vector<std::string> binaryGraphFiles;
     std::string configFilename;
+    bool debug = false;
+    app.add_flag("--debug",debug, "Enable debug logging")->default_val(false);
     app.add_option("-g,--graph-files", binaryGraphFiles, "Input binary graph files to partition into graph components")
         ->required()
         ->check(CLI::ExistingFile);
     app.add_option("-c,--config", configFilename, "Path to configuration file for graph components stage of Africapolis workflow")
         ->check(CLI::ExistingFile); // currently not required / used
     CLI11_PARSE(app, argc, argv);
+    if(debug){
+        spdlog::set_level(spdlog::level::debug);
+    }
     spdlog::info("Parsing command line arguments completed");
     std::vector<std::filesystem::path> binGraphPaths;
     for(auto && fileStr : binaryGraphFiles){
