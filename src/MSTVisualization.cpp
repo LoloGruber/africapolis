@@ -177,7 +177,7 @@ int main(int argc, char *argv[]){
     app.add_option("-g,--graph",graphFile,"Input binary file storing the settlement graph adjacency")->required()->check(CLI::ExistingFile);
     app.add_option("-o", outputStem, "Output filename stem for storing the clustered shapefile");
     app.add_option("-b,--buffer", bufferInMeters, "Buffer size in meters")->default_val(30.0);
-    app.add_option("--debug", debug, "Enable debug logging")->default_val(false);
+    app.add_flag("--debug", debug, "Enable debug logging")->default_val(false);
     if(debug){
         spdlog::set_level(spdlog::level::debug);
     }
