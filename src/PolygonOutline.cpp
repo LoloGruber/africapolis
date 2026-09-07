@@ -195,7 +195,8 @@ public:
                 }
                 continue;
             }
-            VisualizeCluster(initialBufferDistance, targetBufferDistance, createAzimuthalEquidistant(settlements), inputLayer.getSpatialReference())
+            OGRSpatialReference projectedRef = inputLayer.getSpatialReference().IsProjected() ? inputLayer.getSpatialReference() : createAzimuthalEquidistant(settlements);
+            VisualizeCluster(initialBufferDistance, targetBufferDistance, std::move(projectedRef), inputLayer.getSpatialReference())
                 .operator()(settlements, idToMSTEdges, IDField)
                 .if_value_or_error(
                     [&](auto && result){

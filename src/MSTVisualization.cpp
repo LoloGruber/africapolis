@@ -1,6 +1,7 @@
 #include <CLI/CLI.hpp>
 #include <fishnet/Task.hpp>
 #include <ogr_spatialref.h>
+#include <ogr_srs_api.h>
 #include <spdlog/spdlog.h>
 #include <fishnet/Graph.hpp>
 #include <fishnet/PolygonDistance.hpp>
@@ -24,7 +25,7 @@ class MSTVisualization: public Task {
 
     using EdgeGeometryType = fishnet::geometry::SimplePolygon<double>;
 
-    std::vector<EdgeGeometryType> bufferEdges(fishnet::util::forward_range_of<fishnet::geometry::Segment<double>> auto && edges, const OGRSpatialReference & spatialRef) const {
+    OGRSpatialReference createAzimuthalEquidistant(fishnet::util::forward_range_of<fishnet::geometry::Segment<double>> auto && edges) const {
         // Compute the centroid of all edge endpoints to center the Azimuthal Equidistant projection
         double avgX = 0.0, avgY = 0.0;
         size_t count = 0;
@@ -35,11 +36,17 @@ class MSTVisualization: public Task {
         }
         double centerLon = count > 0 ? avgX / static_cast<double>(count) : 0.0;
         double centerLat = count > 0 ? avgY / static_cast<double>(count) : 0.0;
+        OGRSpatialReference sr;
+        sr.SetAE(centerLat, centerLon, 0.0, 0.0);
+        return sr;
+    }
 
-        // Create a single Azimuthal Equidistant projection centered on the dataset
-        OGRSpatialReference metricRef;
-        metricRef.SetAE(centerLat, centerLon, 0.0, 0.0);
-
+    std::vector<EdgeGeometryType> bufferEdges(fishnet::util::forward_range_of<fishnet::geometry::Segment<double>> auto && edges, const OGRSpatialReference & spatialRef) const {
+        // Compute the centroid of all edge endpoints to center the Azimuthal Equidistant projection
+        OGRSpatialReference metricRef = spatialRef.IsProjected()? spatialRef : createAzimuthalEquidistant(edges);
+        if(spatialRef.IsProjected()){
+            spdlog::debug("Input spatial reference is already projected. Buffering will be done in the input CRS, which may not be in meters.");
+        }
         OGRCoordinateTransformation * toMetric = OGRCreateCoordinateTransformation(&spatialRef, &metricRef);
         OGRCoordinateTransformation * toOriginal = OGRCreateCoordinateTransformation(&metricRef, &spatialRef);
 
