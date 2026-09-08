@@ -141,6 +141,13 @@ private:
                 spdlog::debug("Failed to merge geometry collection: {}", finalCollection.exportToWkt());
                 return std::unexpected("Failed to merge final settlement and MST geometries");
             }
+            // UnaryUnion can leave behind self-touching spikes (bowtie pinch points) from
+            // floating point noise where buffered settlements meet MST edge geometries.
+            // MakeValid repairs these so the ring-validity check downstream does not reject them.
+            GeometryPtr repairedFinalUnion {finalUnion->MakeValid()};
+            if(repairedFinalUnion != nullptr){
+                finalUnion = std::move(repairedFinalUnion);
+            }
             std::vector<ResultShape_t> resultPolygons;
             auto geomType = wkbFlatten(finalUnion->getGeometryType());
             switch (geomType) {
