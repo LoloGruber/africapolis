@@ -7,7 +7,7 @@
 #include <fishnet/Segment.hpp>
 #include <fishnet/VectorIO.hpp>
 #include "BinarySettlementGraphAdjacency.hpp"
-#include "ObservableVectorFileReader.hpp"
+#include "SettlementLayerReader.hpp"
 #include "fishnet/PathHelper.h"
 
 
@@ -52,7 +52,7 @@ public:
         using SettlementType = SettlementShape<Shapetype>;
         using EdgeGeometryType = fishnet::geometry::SimplePolygon<double>;
         OGRSpatialReference spatialRef;
-        const auto reader = ObservableVectorFileReader<Shapetype>([&spatialRef](const fishnet::VectorLayer<Shapetype> & layer){spatialRef = layer.getSpatialReference();});
+        const auto reader = SettlementLayerReader<Shapetype>([&spatialRef](const fishnet::VectorLayer<Shapetype> & layer, const fishnet::AbstractVectorFile & vectorFile){spatialRef = layer.getSpatialReference();});
         auto nodes = SettlementType::read<fishnet::AbstractVectorFile>(
             geometryFiles | std::views::transform([](const std::string & file) { return fishnet::AbstractVectorFile(fishnet::util::PathHelper::absoluteCanonical(file)); }),
             reader,

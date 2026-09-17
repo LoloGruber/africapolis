@@ -4,7 +4,7 @@ baseCommand: [FishnetVectorFileSplitter]
 
 hints:
   DockerRequirement:
-    dockerPull: logru/fishnet-apps:1.5.0
+    dockerPull: logru/fishnet-apps:2.0.0
 
 requirements:
   InlineJavascriptRequirement: {}

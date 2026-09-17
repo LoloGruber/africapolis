@@ -1,7 +1,6 @@
 #include "fishnet/CollectionConcepts.hpp"
 #include "fishnet/Feature.hpp"
 #include "fishnet/OGRGeometryAdapter.hpp"
-#include "fishnet/SimplePolygon.hpp"
 #include "fishnet/Vec2D.hpp"
 #include "fishnet/VectorLayer.hpp"
 #include <algorithm>
@@ -17,9 +16,14 @@
 #include <vector>
 #include "AfricapolisConstants.hpp"
 
-using MSTEdge_t = fishnet::geometry::SimplePolygon<double>;
-using SettlementShape_t = fishnet::geometry::Polygon<double>;
-using ResultShape_t = fishnet::geometry::Polygon<double>;
+/*
+ * Every geometry of this stage is read from a data source, handed to OGR for buffering,
+ * transformation and unioning, and written straight back out. None of it is walked segment by
+ * segment, so the OGR backed adapters are used throughout and nothing is converted either way.
+ */
+using MSTEdge_t = fishnet::geometry::OGRPolygonAdapter;
+using SettlementShape_t = fishnet::geometry::OGRPolygonAdapter;
+using ResultShape_t = fishnet::geometry::OGRPolygonAdapter;
 
 class SettlementVisualization: public Task{
 private:
@@ -33,7 +37,7 @@ private:
      * @return OGRSpatialReference with Azimuthal Equidistant projection
      */
     static OGRSpatialReference createAzimuthalEquidistant(fishnet::util::forward_range_of<fishnet::Feature<SettlementShape_t>> auto && cluster) {
-        auto polygons = cluster | std::views::transform([](const auto & settlement){ return settlement.getGeometry(); });
+        auto polygons = cluster | std::views::transform([](const auto & settlement) -> const SettlementShape_t & { return settlement.getGeometry(); });
         double total_area = std::ranges::fold_left(polygons, 0.0, [](double current, const auto & polygon){ return current + polygon.area(); });
         auto centroid = std::ranges::fold_left(polygons, fishnet::geometry::Vec2DReal(), [total_area](const auto & current, const auto & polygon){ return current + polygon.centroid() * (polygon.area()/ total_area); });
         OGRSpatialReference sr;
@@ -51,7 +55,6 @@ private:
         return clusters;
     }
     std::unordered_map<size_t, std::vector<MSTEdge_t>> mstEdges(const fishnet::AbstractVectorFile & mstFile) const {
-        std::unordered_map<size_t, fishnet::Feature<MSTEdge_t>> edges;
         auto mstLayer = fishnet::VectorIO::read<MSTEdge_t>(mstFile);
         auto fromField = mstLayer.getSizeField(Africapolis::FROM_ID_FIELD).value_or_throw();
         auto toField = mstLayer.getSizeField(Africapolis::TO_ID_FIELD).value_or_throw();
@@ -60,7 +63,9 @@ private:
             size_t fromID = feature.getAttribute(fromField).value_or_throw();
             size_t toID = feature.getAttribute(toField).value_or_throw();
             nodesToFeature[fromID].push_back(feature.getGeometry());
-            nodesToFeature[toID].push_back(feature.getGeometry());
+            // an edge is incident to two settlements, so the second insertion is the last use of
+            // the feature and takes its geometry instead of cloning it again
+            nodesToFeature[toID].push_back(std::move(feature).getGeometry());
         }
         return nodesToFeature;
     }
@@ -98,10 +103,12 @@ private:
                 auto settlementID = settlement.getAttribute(IDField).value_or_throw();
                 mstNodeIDs.push_back(settlementID);
             }
-            using GeometryPtr = fishnet::OGRGeometryAdapter::OGRUniquePtr<OGRGeometry>;
-            std::vector<GeometryPtr> settlementPolygons; // stores transformed and buffered settlement polygons
+            using GeometryPtr = fishnet::geometry::OGRUniquePtr<OGRGeometry>;
+            OGRGeometryCollection bufferedCollection;
             for (const auto & settlement : cluster) {
-                auto ogrGeom = fishnet::OGRGeometryAdapter::toOGR(settlement.getGeometry());
+                // the geometry belongs to the input layer and is kept in canonical form by its
+                // adapter, so it is copied before being reprojected rather than transformed in place
+                GeometryPtr ogrGeom {settlement.getGeometry().raw()->clone()};
                 if(ogrGeom->transform(this->toMetric) != OGRERR_NONE){
                     return std::unexpected("Failed to transform settlement geometry to metric projection for settlement with ID: " + settlement.getAttribute(IDField).transform([](auto val){ return std::to_string(val); }).value_or("unknown"));
                 }
@@ -109,11 +116,9 @@ private:
                 if (buffered == nullptr) {
                     return std::unexpected("Buffering failed for settlement with ID: " + settlement.getAttribute(IDField).transform([](auto val){ return std::to_string(val); }).value_or("unknown"));
                 }
-                settlementPolygons.push_back(std::move(buffered));
-            }
-            OGRGeometryCollection bufferedCollection;
-            for(const auto & geom: settlementPolygons){
-                bufferedCollection.addGeometry(geom.get());
+                // the buffered geometry is needed nowhere else, so the collection takes it over
+                // rather than copying it and leaving us to keep the original alive
+                bufferedCollection.addGeometryDirectly(buffered.release());
             }
             GeometryPtr merged {bufferedCollection.UnaryUnion()->Buffer(targetBufferDistance - initialBufferDistance)}; // erode the union of buffered settlements
             if(merged == nullptr){
@@ -123,19 +128,18 @@ private:
                 return std::unexpected("Failed to transform merged settlement geometry back to source projection");
             }
             OGRGeometryCollection finalCollection;
-            std::vector<GeometryPtr> mstEdges;
             for(auto nodeID: mstNodeIDs){
                 auto it = idToMSTEdges.find(nodeID);
                 if (it == idToMSTEdges.end()) {
                     continue; // No edges for this node
                 }
                 for(const auto & edge: it->second){
-                    auto ogrEdge = fishnet::OGRGeometryAdapter::toOGR(edge);
-                    mstEdges.push_back(std::move(ogrEdge));
-                    finalCollection.addGeometry(mstEdges.back().get());
+                    // the edge is already an OGR geometry and addGeometry copies it into the
+                    // collection, so there is nothing to build and nothing to keep alive here
+                    finalCollection.addGeometry(edge.raw());
                 }
             }
-            finalCollection.addGeometry(merged.get());
+            finalCollection.addGeometryDirectly(merged.release());
             GeometryPtr finalUnion {finalCollection.UnaryUnion()};
             if(finalUnion == nullptr){
                 spdlog::debug("Failed to merge geometry collection: {}", finalCollection.exportToWkt());
@@ -143,39 +147,25 @@ private:
             }
             // UnaryUnion can leave behind self-touching spikes (bowtie pinch points) from
             // floating point noise where buffered settlements meet MST edge geometries.
-            // MakeValid repairs these so the ring-validity check downstream does not reject them.
+            // MakeValid repairs these, so that what ends up in the output file is a valid polygon.
             GeometryPtr repairedFinalUnion {finalUnion->MakeValid()};
             if(repairedFinalUnion != nullptr){
                 finalUnion = std::move(repairedFinalUnion);
             }
+            // The union is a polygon or a multi-polygon of them, and either is handed straight to
+            // the adapters: the geometry is taken over as it is instead of being read out point by
+            // point and validated all over again.
+            fishnet::geometry::OGRGeometryAdapter unionGeometry {std::move(finalUnion)};
             std::vector<ResultShape_t> resultPolygons;
-            auto geomType = wkbFlatten(finalUnion->getGeometryType());
-            switch (geomType) {
-                case wkbPolygon: {
-                    auto resultOpt = fishnet::OGRGeometryAdapter::fromOGR(*finalUnion->toPolygon(), true);
-                    if (not resultOpt) {
-                        return std::unexpected("Failed to convert final merged geometry to fishnet Polygon");
-                    }
-                    resultPolygons.push_back(resultOpt.value());
-                    break;
+            if (unionGeometry.isPolygon()) {
+                resultPolygons.push_back(std::move(unionGeometry).toPolygon().value());
+            } else if (unionGeometry.isMultiPolygon()) {
+                auto parts = std::move(unionGeometry).toMultiPolygon().value();
+                for (auto && part : parts.getPolygons()) {
+                    resultPolygons.push_back(std::move(part));
                 }
-                case wkbMultiPolygon: {
-                    auto ogrMultiPolygon = finalUnion->toMultiPolygon();
-                    for (int i = 0; i < ogrMultiPolygon->getNumGeometries(); ++i) {
-                        const OGRGeometry * subGeom = ogrMultiPolygon->getGeometryRef(i);
-                        if (wkbFlatten(subGeom->getGeometryType()) != wkbPolygon) {
-                            return std::unexpected("Sub-geometry of multipolygon is not a polygon");
-                        }
-                        auto resultOpt = fishnet::OGRGeometryAdapter::fromOGR(*subGeom->toPolygon(), true);
-                        if (not resultOpt) {
-                            return std::unexpected("Failed to convert sub-geometry to fishnet Polygon");
-                        }
-                        resultPolygons.push_back(resultOpt.value());
-                    }
-                    break;
-                }
-                default:
-                    return std::unexpected("Final merged geometry is neither a polygon nor a multipolygon");
+            } else {
+                return std::unexpected("Final merged geometry is neither a polygon nor a multipolygon");
             }
             return resultPolygons;
         }
@@ -196,7 +186,9 @@ public:
         for (auto && [clusterID, settlements] : clusteredSettlements) {
             if(clusterID == Africapolis::NOISE_CLUSTER_ID){
                 for (auto && settlement : settlements) {
-                    auto feature = fishnet::Feature<ResultShape_t>(settlement.getGeometry());
+                    // the settlement is written out unchanged and not used afterwards, so its
+                    // geometry is taken rather than cloned; its attributes are a separate member
+                    auto feature = fishnet::Feature<ResultShape_t>(std::move(settlement).getGeometry());
                     feature.copyAttributes(settlement);
                     outputLayer.addFeature(std::move(feature));
                 }

@@ -9,6 +9,6 @@ RUN cmake --build . --config Release -j 8
 RUN cmake --install .
 
 # Runtime stage
-FROM ghcr.io/osgeo/gdal:ubuntu-small-3.9.3 AS runtime
+FROM ghcr.io/osgeo/gdal:ubuntu-small-3.12.2 AS runtime
 COPY --from=build /usr/local/bin /usr/local/bin
 COPY --from=build /usr/local/lib /usr/local/lib

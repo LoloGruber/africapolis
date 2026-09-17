@@ -7,41 +7,14 @@
 #include <fishnet/DistancePredicate.hpp>
 #include <fishnet/CompositePredicate.hpp>
 #include <fishnet/BinaryFileAdjacency.hpp>
-#include <fishnet/ShapeGeometry.hpp>
+#include <fishnet/IGeometry.hpp>
 #include <fishnet/SettlementShape.hpp>
 #include <fishnet/PolygonNeighbours.hpp>
 #include "BinarySettlementGraphAdjacency.hpp"
+#include "SettlementLayerReader.hpp"
 #include "CLI/CLI.hpp"
 
 using json = nlohmann::json;
-
-template<fishnet::geometry::GeometryObject G>
-class GraphConstructionVectorReader {
-public:
-    using geometry_type = G;
-    using file_type = fishnet::AbstractVectorFile;
-private:
-    DistanceFunction distanceFunction;
-    std::unordered_map<FileReference, std::filesystem::path> fileRefMap;
-    static inline HashingFileReferenceMapper fileRefMapper;
-public:
-    fishnet::Either<fishnet::VectorLayer<G>,std::string> operator()(const fishnet::AbstractVectorFile & vectorFile) {
-        auto layer = fishnet::VectorIO::tryRead<G>(vectorFile);
-        if(layer) {
-            this->fileRefMap[fileRefMapper(vectorFile)] = vectorFile.getPath();
-            this->distanceFunction = distanceFunctionForSpatialReference(layer->getSpatialReference());
-        }
-        return layer;
-    }
-
-    DistanceFunction getDistanceFunction() const noexcept {
-        return distanceFunction;
-    }
-
-    const std::unordered_map<FileReference, std::filesystem::path> & getFileReferenceMap() const noexcept {
-        return fileRefMap;
-    }
-};
 
 enum class GraphConstructionMode {
     BUFFER_SWEEP,
@@ -112,10 +85,11 @@ public:
                     GraphConstructionConfig && config):Task("GraphConstruction"), config(std::move(config)) 
     {
         // Read primary input and get distance function
-        auto reader = GraphConstructionVectorReader<S>{};
+        auto reader = SettlementLayerReader<S>([this](const fishnet::VectorLayer<S> & layer, const fishnet::AbstractVectorFile & vectorFile){
+            this->fileRefMap[HashingFileReferenceMapper{}(vectorFile)] = vectorFile.getPath();
+            this->distanceFunction = distanceFunctionForSpatialReference(layer.getSpatialReference());
+        });
         this->settlements = SettlementShape<S>::read(primaryInput, reader, HashingFileReferenceMapper{});
-        this->distanceFunction = reader.getDistanceFunction();
-        this->fileRefMap = reader.getFileReferenceMap();
         this->graphBinaryOutputPath = std::to_string(HashingFileReferenceMapper{}(primaryInput).fileId) + "_graph.bin";
         // Read additional inputs with bounding box filter
         if(this->settlements.empty()){

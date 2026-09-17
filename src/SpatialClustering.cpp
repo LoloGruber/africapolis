@@ -12,7 +12,7 @@
 #include <fishnet/FunctionalConcepts.hpp>
 #include <fishnet/PathHelper.h>
 #include "BinarySettlementGraphAdjacency.hpp"
-#include "ObservableVectorFileReader.hpp"
+#include "SettlementLayerReader.hpp"
 #include "AfricapolisConstants.hpp"
 
 
@@ -109,12 +109,12 @@ public:
         using SettlementType = SettlementShape<ShapeType>;
         auto vectorFiles = inputFilenames | std::views::transform([](const std::string & str){ return fishnet::AbstractVectorFile(str); });
         OGRSpatialReference spatialRef;
-        auto onReadStoreSpatialRef = [&spatialRef](const fishnet::VectorLayer<ShapeType> & layer){
+        auto onReadStoreSpatialRef = [&spatialRef](const fishnet::VectorLayer<ShapeType> & layer, const fishnet::AbstractVectorFile & vectorFile){
             if(spatialRef.IsEmpty()){
                 spatialRef = layer.getSpatialReference();
             }
         };
-        ObservableVectorFileReader<ShapeType> reader(onReadStoreSpatialRef);
+        SettlementLayerReader<ShapeType> reader(onReadStoreSpatialRef);
         auto settlements = SettlementType::read<fishnet::AbstractVectorFile>(vectorFiles, reader,HashingFileReferenceMapper{});
         auto adj = ReadingBinarySettlementGraphAdjacency<SettlementType>(
             this->graphFile,
