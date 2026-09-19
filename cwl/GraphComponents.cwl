@@ -3,27 +3,31 @@ class: Workflow
 requirements:
   - class: SchemaDefRequirement
     types: 
-      - $import: ../types/ComponentsOutput.yaml
+      - $import: ComponentsOutput.yaml
   - class: InlineJavascriptRequirement
 inputs:
-  config:
-    type: File
-    # format: JSON
-    doc: "Path to configuration file for africapolis components step. Contains database credentials and parallelization target"
   graphBinaries:
     type: File[]
     # format: BIN
     doc: "List of graph binary files generated in the graph generation step"
+  maxComponentsPerWorkload:
+    type: int?
+    doc: "Maximum number of graph components assigned to a single clustering task"
+  debug:
+    type: boolean
+    default: false
+    doc: "Enable debug logging"
 outputs:
   componentsOutput:
-    type: ../types/ComponentsOutput.yaml#ComponentsOutput[]
+    type: ComponentsOutput.yaml#ComponentsOutput[]
     outputSource: post_components_output/componentsOutput
 steps:
   graph_components:
     run: GraphComponentsTool.cwl
     in:
-      config: config
       graphBinaries: graphBinaries
+      maxComponentsPerWorkload: maxComponentsPerWorkload
+      debug: debug
     out: [clusterWorkloadFiles,graphWorkloadFiles]
   post_components_output:
     run: 
@@ -35,7 +39,7 @@ steps:
         graphWorkloadFiles: File[]
       outputs:
         componentsOutput:
-          type: ../types/ComponentsOutput.yaml#ComponentsOutput[]
+          type: ComponentsOutput.yaml#ComponentsOutput[]
       expression: |
         ${
           function filesToMap(fileArray){

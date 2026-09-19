@@ -168,10 +168,10 @@ int main(int argc, char *argv[]){
     app.add_option("-o", outputStem, "Output filename stem for storing the clustered shapefile");
     app.add_option("-b,--buffer", bufferInMeters, "Buffer size in meters")->default_val(30.0);
     app.add_flag("--debug", debug, "Enable debug logging")->default_val(false);
+    CLI11_PARSE(app, argc, argv);
     if(debug){
         spdlog::set_level(spdlog::level::debug);
     }
-    CLI11_PARSE(app, argc, argv);
     MSTVisualization task(geometryFiles, fishnet::util::PathHelper::absoluteCanonical(graphFile), bufferInMeters, outputStem);
     task.run();
 }
