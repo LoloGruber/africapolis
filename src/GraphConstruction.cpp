@@ -41,6 +41,7 @@ private:
                 return fishnet::geometry::PolygonNeighbours::delaunay(this->settlements,distancePredicate);
             case GraphConstructionMode::BUFFER_SWEEP:
             {
+                const size_t MAX_NEIGHBORS_PER_NODE = Africapolis::requiredFor(parameters.maxNeighboursPerNode,"--max-neighbors-per-node",parameters.mode);
                 auto boundingBoxPolygonWrapper = [this](const SettlementShape<S> & settPolygon ){
                     /* Create scaled aaBB containing at least all points reachable from the polygon within the maximum edge distance*/
                     auto aaBB = fishnet::geometry::Rectangle<fishnet::math::DEFAULT_NUMERIC>(settPolygon);
@@ -54,7 +55,6 @@ private:
                 auto shortCircuitPredicate = [neighbouringPredicate= std::move(neighbouringPredicate)](const fishnet::geometry::BoundingBoxWrapper<SettlementShape<S>> & lhs, const fishnet::geometry::BoundingBoxWrapper<SettlementShape<S>> & rhs){
                     return lhs.getBoundingBox().overlap(rhs.getBoundingBox()) && neighbouringPredicate(lhs.getPolygon(),rhs.getPolygon());
                 };
-                const size_t MAX_NEIGHBORS_PER_NODE = Africapolis::requiredFor(parameters.maxNeighboursPerNode,"--max-neighbors-per-node",parameters.mode);
                 return fishnet::geometry::PolygonNeighbours::sweepTemplate(this->settlements,shortCircuitPredicate,boundingBoxPolygonWrapper,MAX_NEIGHBORS_PER_NODE);
             }
             default:
