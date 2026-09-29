@@ -3,15 +3,25 @@ The *Africapolis* Workflow clusters and visualizes urban areas from individual b
 
 ![](doc/Kahama_Africapolis.png)
 
-# Installation
-All software dependencies are capsulated in a custom [docker image](https://hub.docker.com/r/logru/africapolis) containing the binaries and the GDAL library which is specified in the CWL files. The workflow can be executed with any CWL-Runner, that supports containerized execution. 
-
- The following example shows how to run the workflow with `cwltool`, providing the workflow's main definition file ([_Africapolis.cwl_](Africapolis.cwl)) and the parameters of the run.
+# Quick Start
+All binaries of the workflow and the GDAL library are packaged in the
+[_logru/africapolis_](https://hub.docker.com/r/logru/africapolis) docker image, the Fishnet tools in
+[_logru/fishnet-apps_](https://hub.docker.com/r/logru/fishnet-apps). The CWL files reference both
+images, so the only requirements are docker and a [CWL Runner](https://www.commonwl.org/implementations/)
+supporting containerized execution, e.g. the reference runner [cwltool](https://cwltool.readthedocs.io/en/latest/cli.html#cwltool):
+```shell
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install cwltool
 ```
-cwltool Africapolis.cwl --vectorFile <File.gpkg> --partitionDepth <UnsignedInt>
-``` 
-Every parameter but the input file has a default, so the command above already is a complete run.
-Run `cwltool Africapolis.cwl --help` to list all of them.
+Run the workflow's main definition file ([_Africapolis.cwl_](Africapolis.cwl)) with the
+[_default_](jobs/default.yml) job file, which processes the small example input
+[_Kahama_Small.gpkg_](data/input/Kahama_Small.gpkg) shipped with the repository:
+```shell
+cwltool Africapolis.cwl jobs/default.yml
+```
+To process your own data, copy the job file and point its `vectorFile` (or `shapefile`) entry to
+your input, see [Configuration](#configuration).
 
 # Workflow Structure
 [_Africapolis.cwl_](Africapolis.cwl) is the entry point of the workflow. It references the tools and
@@ -23,7 +33,7 @@ the tiles back together.
 |---|---|---|
 | `split` | [_FishnetSplit.cwl_](cwl/FishnetSplit.cwl) | Splits the input into tiles, which the following steps process in parallel |
 | `filter` | [_FishnetFilter.cwl_](cwl/FishnetFilter.cwl) | Assigns a unique *Fishnet ID* to every settlement polygon |
-| `graph_generation` | [_GraphGeneration.cwl_](cwl/GraphGeneration.cwl) → [_GraphConstructionTool.cwl_](cwl/GraphConstructionTool.cwl) | Connects neighbouring settlements into a settlement graph, one graph per tile |
+| `graph_generation` | [_GraphConstruction.cwl_](cwl/GraphConstruction.cwl) → [_GraphConstructionPreprocessing.cwl_](cwl/GraphConstructionPreprocessing.cwl), [_GraphConstructionTool.cwl_](cwl/GraphConstructionTool.cwl) | Pairs every tile with its neighbouring tiles and connects neighbouring settlements into a settlement graph, one graph per tile |
 | `graph_components` | [_GraphComponents.cwl_](cwl/GraphComponents.cwl) → [_GraphComponentsTool.cwl_](cwl/GraphComponentsTool.cwl) | Retrieves the connected components of the settlement graph and balances them into clustering workloads |
 | `clustering` | [_SpatialClustering.cwl_](cwl/SpatialClustering.cwl) → [_SpatialClusteringTool.cwl_](cwl/SpatialClusteringTool.cwl), [_MSTVisualization.cwl_](cwl/MSTVisualization.cwl) | Clusters the settlements of each workload and buffers the minimum spanning tree connecting the settlements of a cluster |
 | `visualization` | [_PolygonOutline.cwl_](cwl/PolygonOutline.cwl) | Buffers, unions and erodes the settlements of a cluster into the outline of an urban area |
@@ -99,28 +109,36 @@ Exactly one of the two is given, depending on the format of the input.
 | `--debug` | `false` | Enable debug logging in every step of the workflow |
 
 ### Job Files
-A run can also be described by a CWL job file, which is the practical way of keeping a parameter set
-around and reproducing a run later. The [_jobs_](jobs) directory holds one ready to run job file per
-parameter set, for example [_dbsc200_area.yml_](jobs/dbsc200_area.yml):
+The parameters can also be passed on the command line (e.g. `cwltool Africapolis.cwl --vectorFile <File.gpkg> --clusteringMode BFS`),
+but a CWL job file is the practical way of keeping a parameter set around and reproducing a run
+later. The [_jobs_](jobs) directory holds one ready to run job file per parameter set, each
+processing [_Kahama_Small.gpkg_](data/input/Kahama_Small.gpkg):
+
+| Job file | Graph construction | Clustering |
+|---|---|---|
+| [_default.yml_](jobs/default.yml) | `DELAUNAY`, 200 m | `DBSCAN`, 200 m, min. 3 settlements, urban areas below 1000 m² dropped |
+| [_bfs200_delaunay.yml_](jobs/bfs200_delaunay.yml) | `DELAUNAY`, 200 m | `BFS`, 200 m |
+| [_bfs200_sweep.yml_](jobs/bfs200_sweep.yml) | `BUFFER_SWEEP`, 200 m, 5 neighbours | `BFS`, 200 m |
+| [_dbscan200_delaunay.yml_](jobs/dbscan200_delaunay.yml) | `DELAUNAY`, 200 m | `DBSCAN`, 200 m, min. 3 settlements |
+| [_dbscan200_sweep.yml_](jobs/dbscan200_sweep.yml) | `BUFFER_SWEEP`, 200 m, 5 neighbours | `DBSCAN`, 200 m, min. 5 settlements |
+| [_dbsc200_sweep.yml_](jobs/dbsc200_sweep.yml) | `BUFFER_SWEEP`, 200 m, 5 neighbours | `DBSC`, 200 m, min. 5 settlements, beta 2 |
+| [_dbsc200_area._sweep.yml_](jobs/dbsc200_area._sweep.yml) | `BUFFER_SWEEP`, 200 m, 5 neighbours | `DBSC`, 200 m, min. 5 settlements, beta 2, `AREA` attribute |
+
+[_default.yml_](jobs/default.yml), for example, reads:
 ```yaml
 # --- Input data ---
 vectorFile:
   class: File
-  path: ../data/input/Kahama_Small.gpkg
-partitionDepth: 1
-
+  path: ../data/input/Kahama_Small.gpkg  # replace with your own input file path
 # --- Parameters ---
-graphConstructionMode: BUFFER_SWEEP
+# Delaunay graph construction with DBSCAN clustering at 200m, dropping urban areas below 1000 m².
+partitionDepth: 1
+graphConstructionMode: DELAUNAY
 graphDistanceThreshold: 200.0
-maxNeighborsPerNode: 5
-clusteringMode: DBSC
+clusteringMode: DBSCAN
 clusterDistanceThreshold: 200.0
-minClusterSize: 5
-dbscBeta: 2
-dbscAttributeMapper: AREA
-```
-```
-cwltool Africapolis.cwl jobs/dbsc200_area.yml
+minClusterSize: 3
+minArea: 1000.0
 ```
 Paths in a job file are resolved relative to the job file itself. A job file describes a run
 completely, so command line arguments cannot be added on top of it. Copy one of the job files and
@@ -154,10 +172,18 @@ source ~/africapolis-workflow/venv/bin/activate
 toil-cwl-runner --singularity --batchSystem slurm ~/africapolis-workflow/Africapolis.cwl <Job.yml>
 ```
 The [shellscript](prod/hpc/run-africapolis.sh) does this for you, taking the input file and a
-preset holding everything else, the partition depth included
+preset holding everything else, the partition depth included. Without `--preset`,
+[_default.yml_](jobs/default.yml) is used.
 ```
-./run-africapolis.sh --preset ~/africapolis-workflow/jobs/dbsc200.yml <File.gpkg>
+./run-africapolis.sh --preset ~/africapolis-workflow/jobs/dbsc200_sweep.yml <File.gpkg>
 ```
+Alternatively, pass a complete job file with `--job`, which is run as is, its input included. Its
+relative paths are resolved against the location of the job file.
+```
+./run-africapolis.sh --job <Job.yml>
+```
+The outputs are written to `~/africapolis-workflow/output/<Experiment>`, named after the input file
+and the preset (`<File>_<Preset>`), or after the job file when using `--job`.
 
 # Development
 ### Binaries (C++)
@@ -179,20 +205,21 @@ AfricapolisSpatialClustering --mode DBSC --distance-threshold 200 --min-cluster-
 | `AfricapolisPolygonOutline` | [_PolygonOutline.cwl_](cwl/PolygonOutline.cwl) |
 | `AfricapolisEdgeVisualization` | [_EdgeVisualization.cwl_](cwl/EdgeVisualization.cwl) |
 
-### Installing CWL-Runner
-Additionally, a [CWL Runner](https://www.commonwl.org/implementations/) must be installed to execute the workflow. The reference executor [cwltool](https://cwltool.readthedocs.io/en/latest/cli.html#cwltool) is recommended and can be installed in a python virtual environment as follows:
+### Docker Image
+The [Dockerfile](Dockerfile) builds the binaries on top of `logru/fishnet-deps` and copies them into
+a GDAL runtime image. Since the CWL files reference `logru/africapolis:latest`, a locally built image
+is picked up by `cwltool` instead of the published one:
 ```shell
-python -m venv .venv
-source .venv/bin/activate
-python -m pip install cwltool
+docker build -t logru/africapolis:latest .
+cwltool Africapolis.cwl jobs/default.yml
 ```
-### Running the Workflow
-```
-cwltool Africapolis.cwl --vectorFile <File.gpkg> --partitionDepth <UnsignedInt>
-```
+The image is published by the CI pipeline. [update.sh](update.sh) builds it by hand, pushing it with `--push`.
 
 ### CI/CD
-The [CI workflow](.github/workflows/ci.yml) runs on pushes and pull requests to `main`:
+The [CI workflow](.github/workflows/ci.yml) runs on pushes and pull requests to `main` that touch
+the binaries, the image or the workflow tested by it (`src`, `lib`, `CMakeLists.txt`, `Dockerfile`,
+`Africapolis.cwl`, `cwl`, `jobs/default.yml` and the pipeline itself). Changes to
+the documentation, the other job files or the HPC scripts do not trigger it.
 1. Builds the binaries by building the [Dockerfile](Dockerfile) (`logru/africapolis:latest` and `logru/africapolis:<version>`, the version taken from [CMakeLists.txt](CMakeLists.txt))
 2. Runs every binary with `--help` as a smoke test
 3. Validates [Africapolis.cwl](Africapolis.cwl) and executes it with [jobs/default.yml](jobs/default.yml) using `cwltool`, against the freshly built image. The outputs are uploaded as the `africapolis-output` artifact.
