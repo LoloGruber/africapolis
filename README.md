@@ -190,3 +190,12 @@ python -m pip install cwltool
 ```
 cwltool Africapolis.cwl --vectorFile <File.gpkg> --partitionDepth <UnsignedInt>
 ```
+
+### CI/CD
+The [CI workflow](.github/workflows/ci.yml) runs on pushes and pull requests to `main`:
+1. Builds the binaries by building the [Dockerfile](Dockerfile) (`logru/africapolis:latest` and `logru/africapolis:<version>`, the version taken from [CMakeLists.txt](CMakeLists.txt))
+2. Runs every binary with `--help` as a smoke test
+3. Validates [Africapolis.cwl](Africapolis.cwl) and executes it with [jobs/default.yml](jobs/default.yml) using `cwltool`, against the freshly built image. The outputs are uploaded as the `africapolis-output` artifact.
+4. On pushes to `main` only, publishes both image tags to Docker Hub.
+
+Publishing requires the repository secrets `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` (a Docker Hub access token with write permission).
