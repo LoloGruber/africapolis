@@ -1,11 +1,3 @@
-# Delaunay graph construction with DBSCAN clustering at 200m.
-#
-#   cwltool Africapolis.cwl jobs/dbscan200_delaunay.yml
-#
-# Copy this file and point vectorFile (or shapefile) at your own input to run it on other
-# data. A cwl job file describes a run completely, so every parameter of the run is set here
-# and command line arguments cannot be added on top of it.
-
 # --- Input data ---
 vectorFile:
   class: File

@@ -5,7 +5,8 @@ vectorFile:
 partitionDepth: 1
 
 # --- Parameters ---
-graphConstructionMode: DELAUNAY
+graphConstructionMode: BUFFER_SWEEP
 graphDistanceThreshold: 200.0
+maxNeighborsPerNode: 5
 clusteringMode: BFS
 clusterDistanceThreshold: 200.0

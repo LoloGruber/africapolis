@@ -5,7 +5,11 @@ vectorFile:
 partitionDepth: 1
 
 # --- Parameters ---
-graphConstructionMode: DELAUNAY
+graphConstructionMode: BUFFER_SWEEP
 graphDistanceThreshold: 200.0
-clusteringMode: BFS
+maxNeighborsPerNode: 5
+clusteringMode: DBSC
 clusterDistanceThreshold: 200.0
+minClusterSize: 5
+dbscBeta: 2
+dbscAttributeMapper: AREA

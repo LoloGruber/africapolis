@@ -145,7 +145,7 @@ steps:
     scatter: [vectorFile]
     out: [filteredVectorFile]
   graph_generation:
-    run: cwl/GraphGeneration.cwl
+    run: cwl/GraphConstruction.cwl
     in: 
       vectorFiles: filter/filteredVectorFile
       filenamePrefix: 

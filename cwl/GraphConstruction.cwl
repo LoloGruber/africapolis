@@ -37,7 +37,7 @@ outputs:
     outputSource: generate_graph/graphBinary
 steps:
   prepare_workload:
-    run: PrepareGraphConstruction.cwl
+    run: GraphConstructionPreprocessing.cwl
     in:
       vectorFiles: vectorFiles
       filenamePrefix: filenamePrefix

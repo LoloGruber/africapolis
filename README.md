@@ -131,7 +131,6 @@ Use the [Africapolis Shellscript](prod/hpc/run-africapolis.sh) to install and ru
 ### 1. Upload Files
 - Upload `Africapolis.cwl`, the `cwl` directory holding the tools it references and the `jobs` directory holding the parameter presets, keeping the directory structure of the repository
 - Upload input files or pull from STAC
-- Store files in [corresponding directory](doc/hpc_directory_structure.png)
 ### 2. Install Toil
 - Create python venv
 ```
