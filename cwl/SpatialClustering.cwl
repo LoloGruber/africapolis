@@ -3,20 +3,46 @@ class: Workflow
 requirements:
 - class: SchemaDefRequirement
   types: 
-    - $import: ../types/ComponentsOutput.yaml
-    - $import: ../types/ClusterWorkload.yaml
+    - $import: ComponentsOutput.yaml
+    - $import: ClusterWorkload.yaml
 inputs:
-  config:
-    type: File
-    # format: JSON
-    doc: "Path to configuration file for africapolis clustering step. Contains database credentials"
   workload: 
-    type: ../types/ComponentsOutput.yaml#ComponentsOutput
+    type: ComponentsOutput.yaml#ComponentsOutput
     doc: "Object containing the json workload definition and the graph file"
   files: 
     type: File[]
     # format: GPKG
     doc: "List of vector files to be used for assigning the workload for the clustering"
+  mode:
+    type:
+      type: enum
+      symbols: [DBSCAN, BFS, DBSC]
+    doc: "Clustering algorithm applied to the settlement graph"
+  distanceThreshold:
+    type: float
+    doc: "Maximum distance in meters between two settlements of the same cluster"
+  minClusterSize:
+    type: int?
+    doc: "Minimum number of settlements per cluster. Required by the DBSCAN and DBSC modes"
+  beta:
+    type: int?
+    doc: "Order of the neighbourhood considered when trimming the settlement graph. Required by the DBSC mode"
+  t1:
+    type: float?
+    doc: "Custom t1 threshold of the DBSC heuristic"
+  attributeMapper:
+    type:
+      - "null"
+      - type: enum
+        symbols: [AREA, NONE]
+    doc: "Settlement attribute combined with the spatial distance by the DBSC mode"
+  mstBuffer:
+    type: float?
+    doc: "Width in meters of the buffer applied to the MST edges"
+  debug:
+    type: boolean
+    default: false
+    doc: "Enable debug logging"
 outputs:
   clusteredOutput:
     type: File
@@ -32,14 +58,14 @@ steps:
             class: ExpressionTool
             inputs:
                 workload:
-                    type: ../types/ComponentsOutput.yaml#ComponentsOutput
+                    type: ComponentsOutput.yaml#ComponentsOutput
                 files: 
                     type: File[]
                     # format: GPKG
                     doc: "List of vector files to be used for assigning the workload for the clustering step"
             outputs:
                 clusterWorkload:
-                    type: ../types/ClusterWorkload.yaml#ClusterWorkload
+                    type: ClusterWorkload.yaml#ClusterWorkload
                     doc: "Parsed ClusterWorkload object"
             expression: |
                 ${
@@ -74,12 +100,13 @@ steps:
         outputStem:
           source: prepare_cluster_workload/clusterWorkload
           valueFrom: $("Edges_"+ inputs.clusterWorkload.graphBinary.nameroot)
+        buffer: mstBuffer
+        debug: debug
       out: [mstShapefile]
     clustering:
       run: SpatialClusteringTool.cwl
       in:
         clusterWorkload: prepare_cluster_workload/clusterWorkload
-        config: config
         graphBinary:
           source: prepare_cluster_workload/clusterWorkload
           valueFrom: $(inputs.clusterWorkload.graphBinary)
@@ -89,4 +116,11 @@ steps:
         outputStem:
           source: prepare_cluster_workload/clusterWorkload
           valueFrom: $("Clustered_"+ inputs.clusterWorkload.graphBinary.nameroot)
+        mode: mode
+        distanceThreshold: distanceThreshold
+        minClusterSize: minClusterSize
+        beta: beta
+        t1: t1
+        attributeMapper: attributeMapper
+        debug: debug
       out: [clusteredOutput]

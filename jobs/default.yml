@@ -1,0 +1,13 @@
+# --- Input data ---
+vectorFile:
+  class: File
+  path: ../data/input/Kahama_Small.gpkg  # replace with your own input file path
+# --- Parameters ---
+# Delaunay graph construction with DBSCAN clustering at 200m, dropping urban areas below 1000 m².
+partitionDepth: 1
+graphConstructionMode: DELAUNAY
+graphDistanceThreshold: 200.0
+clusteringMode: DBSCAN
+clusterDistanceThreshold: 200.0
+minClusterSize: 3
+minArea: 1000.0

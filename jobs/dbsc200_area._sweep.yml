@@ -1,0 +1,15 @@
+# --- Input data ---
+vectorFile:
+  class: File
+  path: ../data/input/Kahama_Small.gpkg
+partitionDepth: 1
+
+# --- Parameters ---
+graphConstructionMode: BUFFER_SWEEP
+graphDistanceThreshold: 200.0
+maxNeighborsPerNode: 5
+clusteringMode: DBSC
+clusterDistanceThreshold: 200.0
+minClusterSize: 5
+dbscBeta: 2
+dbscAttributeMapper: AREA

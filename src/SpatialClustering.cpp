@@ -1,9 +1,8 @@
 #include <CLI/CLI.hpp>
 #include <ranges>
-#include <magic_enum.hpp>
+#include <spdlog/spdlog.h>
 #include <fishnet/Fishnet.hpp>
 #include <fishnet/DBSC.hpp>
-#include <fishnet/TaskConfig.hpp>
 #include <fishnet/DistanceFunction.hpp>
 #include <fishnet/DistancePredicate.hpp>
 #include <fishnet/SettlementShape.hpp>
@@ -14,6 +13,7 @@
 #include "BinarySettlementGraphAdjacency.hpp"
 #include "SettlementLayerReader.hpp"
 #include "AfricapolisConstants.hpp"
+#include "EnumOption.hpp"
 
 
 enum class ClusterMode {
@@ -38,51 +38,38 @@ static fishnet::util::UnaryFunction_t<T, double> attributeMapper(DBSCAttributeFu
     throw std::runtime_error("Unsupported attribute function");
 }
 
-struct ClusteringConfig:TaskConfig {
-    constexpr static const char * CLUSTER_KEY = "clustering";
-    constexpr static const char * CLUSTER_MODE_KEY = "mode";
-    constexpr static const char * CLUSTER_ARGS_KEY = "args";
-
-    ClusterMode clusterMode;
-    json clusterArgs;
-    ClusteringConfig(const json & config):TaskConfig(config){
-        auto clusterConfig = this->jsonDescription.at(CLUSTER_KEY);
-        this->clusterMode = magic_enum::enum_cast<ClusterMode>(clusterConfig.at(CLUSTER_MODE_KEY).get<std::string>()).value();
-        this->clusterArgs = clusterConfig.at(CLUSTER_ARGS_KEY);
-    }
+struct ClusteringParameters {
+    ClusterMode mode;
+    double distanceThreshold;
+    std::optional<size_t> minClusterSize;   // DBSCAN and DBSC
+    std::optional<size_t> beta;             // DBSC only
+    std::optional<double> t1;               // DBSC only
+    DBSCAttributeFunction attributeFunction = DBSCAttributeFunction::NONE; // DBSC only
 
     template<fishnet::graph::Graph G> requires(fishnet::geometry::Shape<typename G::node_type>)
     fishnet::ClusterAlgorithm_t<G> getSpatialClusterAlgorithm(DistanceFunction && distanceFunction) const {
         using T = typename G::node_type;
-        switch(this->clusterMode){
+        switch(this->mode){
             case ClusterMode::DBSCAN:
                 {
-                    double eps = clusterArgs.at("distance-threshold").get<double>();
-                    size_t minPts = clusterArgs.at("min-cluster-size").get<size_t>(); 
-                    return fishnet::DBSCAN<T>(eps, minPts, [&distanceFunction](const typename G::node_type & lhs, const typename G::node_type & rhs){
+                    // the algorithm outlives this call, so the distance function is copied into it
+                    return fishnet::DBSCAN<T>(this->distanceThreshold, Africapolis::requiredFor(this->minClusterSize,"--min-cluster-size",this->mode), [distanceFunction](const T & lhs, const T & rhs){
                         return fishnet::geometry::shapeDistance(lhs,rhs,distanceFunction);
                     });
                 }
             case ClusterMode::BFS: 
-                {
-                    double distanceThreshold = clusterArgs.at("distance-threshold").get<double>();
-                    return fishnet::BFSClustering<T>(DistanceBiPredicate(std::move(distanceFunction), distanceThreshold));
-                }
+                return fishnet::BFSClustering<T>(DistanceBiPredicate(std::move(distanceFunction), this->distanceThreshold));
             case ClusterMode::DBSC:
-                {   
-                    double customT1 = clusterArgs.contains("t1") ? clusterArgs.at("t1").get<double>() : NAN;
-                    DBSCAttributeFunction attributeFunction = clusterArgs.contains("attribute-mapper") ? magic_enum::enum_cast<DBSCAttributeFunction>(clusterArgs.at("attribute-mapper").get<std::string>()).value_or(DBSCAttributeFunction::NONE) : DBSCAttributeFunction::NONE;
-                    return fishnet::DBSCBuilder<T>()
-                        .setEps(clusterArgs.at("distance-threshold").get<double>())
-                        .setBeta(clusterArgs.at("beta").get<size_t>())
-                        .setMinPts(clusterArgs.at("min-cluster-size").get<size_t>())
-                        .setDistanceFunction([distanceFunction](const typename G::node_type & lhs, const typename G::node_type & rhs){
-                            return fishnet::geometry::shapeDistance(lhs,rhs,distanceFunction);
-                        })
-                        .setAttributeExtractor(attributeMapper<T>(attributeFunction))
-                        .setT1(customT1)
-                        .build();
-                }
+                return fishnet::DBSCBuilder<T>()
+                    .setEps(this->distanceThreshold)
+                    .setBeta(Africapolis::requiredFor(this->beta,"--beta",this->mode))
+                    .setMinPts(Africapolis::requiredFor(this->minClusterSize,"--min-cluster-size",this->mode))
+                    .setDistanceFunction([distanceFunction](const T & lhs, const T & rhs){
+                        return fishnet::geometry::shapeDistance(lhs,rhs,distanceFunction);
+                    })
+                    .setAttributeExtractor(attributeMapper<T>(this->attributeFunction))
+                    .setT1(this->t1.value_or(NAN))
+                    .build();
         }
         throw std::runtime_error("Unsupported clustering mode");
     }
@@ -90,18 +77,18 @@ struct ClusteringConfig:TaskConfig {
 
 class SpatialClustering : public Task {
 private: 
-    ClusteringConfig config;
+    ClusteringParameters parameters;
     std::vector<std::string> inputFilenames;
     std::filesystem::path graphFile;
     std::string outputStem;
 public:
 
     SpatialClustering(
-        const ClusteringConfig & config,
+        ClusteringParameters parameters,
         std::vector<std::string> && inputFilenames,
         const std::filesystem::path & graphFile,
         std::string && outputStem
-    ):Task("Clustering"), config(config), inputFilenames(std::move(inputFilenames)), graphFile(graphFile), outputStem(std::move(outputStem)){}
+    ):Task("Clustering"), parameters(std::move(parameters)), inputFilenames(std::move(inputFilenames)), graphFile(graphFile), outputStem(std::move(outputStem)){}
     
     void run() {
         // Load shapes and settlement graph
@@ -123,7 +110,7 @@ public:
         auto graph = fishnet::graph::GraphFactory::UndirectedGraph(std::move(adj));
 
         // Run clustering
-        auto clusterAlgorithm = config.getSpatialClusterAlgorithm<decltype(graph)>(distanceFunctionForSpatialReference(spatialRef));
+        auto clusterAlgorithm = parameters.getSpatialClusterAlgorithm<decltype(graph)>(distanceFunctionForSpatialReference(spatialRef));
         auto result = clusterAlgorithm(graph);
 
         // Store result
@@ -153,18 +140,36 @@ public:
 
 int main(int argc, char *argv[]){
     // Parse cmd arguments
-    CLI::App app{"Fishnet Clustering Algorithm"};
+    CLI::App app{"Africapolis Spatial Clustering"};
     std::vector<std::string> inputfiles;
     std::string graphFile;
-    std::string configfile;
     std::string outputStem;
+    ClusteringParameters parameters;
+    bool debug = false;
     app.add_option("-i,--inputs",inputfiles,"Input vector files storing the polygons with id for clustering")->required()->each(CLI::ExistingFile);
-    app.add_option("-c,--config", configfile, "Workflow configuration file path")->required()->check(CLI::ExistingFile);
-    app.add_option("-g, --graph",graphFile,"Graph file")->required()->check(CLI::ExistingFile);
+    app.add_option("-g,--graph",graphFile,"Graph file")->required()->check(CLI::ExistingFile);
     app.add_option("--outputStem", outputStem, "Output filename stem for storing the clustered vector file");
+    app.add_option("--mode",parameters.mode,"Clustering algorithm applied to the settlement graph")
+        ->required()
+        ->transform(Africapolis::enumSymbols<ClusterMode>());
+    app.add_option("--distance-threshold",parameters.distanceThreshold,"Maximum distance in meters between two settlements of the same cluster")
+        ->required()
+        ->check(CLI::PositiveNumber);
+    app.add_option("--min-cluster-size",parameters.minClusterSize,"Minimum number of settlements per cluster. Settlements of smaller clusters are classified as noise. Required by the DBSCAN and DBSC modes")
+        ->check(CLI::PositiveNumber);
+    app.add_option("--beta",parameters.beta,"Order of the neighbourhood considered when trimming the settlement graph. Required by the DBSC mode")
+        ->check(CLI::PositiveNumber);
+    app.add_option("--t1",parameters.t1,"Custom t1 threshold of the DBSC heuristic. Derived from the data when omitted")
+        ->check(CLI::PositiveNumber);
+    app.add_option("--attribute-mapper",parameters.attributeFunction,"Settlement attribute combined with the spatial distance by the DBSC mode")
+        ->transform(Africapolis::enumSymbols<DBSCAttributeFunction>());
+    app.add_flag("--debug",debug,"Enable debug logging");
     CLI11_PARSE(app, argc, argv); 
+    if(debug){
+        spdlog::set_level(spdlog::level::debug);
+    }
     SpatialClustering clusteringTask(
-        ClusteringConfig(nlohmann::json::parse(std::ifstream(configfile))),
+        std::move(parameters),
         std::move(inputfiles), 
         std::filesystem::path(graphFile),
         std::move(outputStem)

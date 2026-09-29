@@ -25,6 +25,17 @@ inputs:
         doc: "Output stem for the output vector file"
         inputBinding:
             prefix: "-o"
+    buffer:
+        type: float?
+        doc: "Width in meters of the buffer applied to the MST edges. Defaults to 30.0 when omitted"
+        inputBinding:
+            prefix: "--buffer"
+    debug:
+        type: boolean
+        default: false
+        doc: "Enable debug logging"
+        inputBinding:
+            prefix: "--debug"
 outputs:
     mstShapefile:
         type: File

@@ -1,0 +1,11 @@
+# --- Input data ---
+vectorFile:
+  class: File
+  path: ../data/input/Kahama_Small.gpkg
+partitionDepth: 1
+
+# --- Parameters ---
+graphConstructionMode: DELAUNAY
+graphDistanceThreshold: 200.0
+clusteringMode: BFS
+clusterDistanceThreshold: 200.0

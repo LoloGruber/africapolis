@@ -1,10 +1,13 @@
 #include <CLI/CLI.hpp>
+#include <nlohmann/json.hpp>
+#include <spdlog/spdlog.h>
 #include <fishnet/Graph.hpp>
 #include <fishnet/Task.hpp>
-#include <fishnet/TaskConfig.hpp>
 #include <fishnet/BidirectionalMap.hpp>
 #include <unordered_set>
 #include "BinarySettlementGraphAdjacency.hpp"
+
+constexpr size_t DEFAULT_MAX_COMPONENTS_PER_WORKLOAD = 5000;
 
 struct ClusterWorkload{
     std::vector<FileReference> files;
@@ -23,22 +26,9 @@ void to_json(nlohmann::json & j, const ClusterWorkloadResult & workloadResult) {
     };
 }
 
-struct GraphComponentsConfig: TaskConfig{
-    constexpr static const char * MAX_COMPONENTS_PER_WORKLOAD_KEY = "max-components-per-workload";
-    size_t maxComponentsPerWorkload;
-
-    GraphComponentsConfig(const nlohmann::json & configDescription): TaskConfig(configDescription){
-        if(this->jsonDescription.contains(MAX_COMPONENTS_PER_WORKLOAD_KEY)){
-            this->jsonDescription.at(MAX_COMPONENTS_PER_WORKLOAD_KEY).get_to(this->maxComponentsPerWorkload);
-        }else {
-            this->maxComponentsPerWorkload = 5000; // default value
-        }
-    }
-};
-
 class GraphComponents : public Task {
 private:
-    GraphComponentsConfig config;
+    size_t maxComponentsPerWorkload;
     std::vector<std::filesystem::path> binGraphFiles;
 
     auto readInput() {
@@ -72,8 +62,8 @@ private:
     }
 
     void splitAndInsertWorkload(std::vector<ClusterWorkload> & workloads, ClusterWorkload && workload) {
-        if (workload.components.size() > config.maxComponentsPerWorkload) {
-            size_t splitCount = (workload.components.size() + config.maxComponentsPerWorkload - 1) / config.maxComponentsPerWorkload;
+        if (workload.components.size() > maxComponentsPerWorkload) {
+            size_t splitCount = (workload.components.size() + maxComponentsPerWorkload - 1) / maxComponentsPerWorkload;
             size_t componentsPerSplit = workload.components.size() / splitCount;
             auto it = workload.components.begin();
             for (size_t i = 0; i < splitCount; ++i) {
@@ -154,7 +144,7 @@ private:
     }
 
 public: 
-    GraphComponents(GraphComponentsConfig && config, std::vector<std::filesystem::path> binGraphFiles):Task("GraphComponents"), config(std::move(config)), binGraphFiles(std::move(binGraphFiles)){}
+    GraphComponents(size_t maxComponentsPerWorkload, std::vector<std::filesystem::path> binGraphFiles):Task("GraphComponents"), maxComponentsPerWorkload(maxComponentsPerWorkload), binGraphFiles(std::move(binGraphFiles)){}
 
     void run() {
         auto [graph, fileIdToPathMap] = readInput();
@@ -204,14 +194,15 @@ int main(int argc, char * argv[]){
     spdlog::info("Starting GraphComponents binary");
     CLI::App app{"AfricapolisGraphComponents"};
     std::vector<std::string> binaryGraphFiles;
-    std::string configFilename;
+    size_t maxComponentsPerWorkload = DEFAULT_MAX_COMPONENTS_PER_WORKLOAD;
     bool debug = false;
     app.add_flag("--debug",debug, "Enable debug logging")->default_val(false);
     app.add_option("-g,--graph-files", binaryGraphFiles, "Input binary graph files to partition into graph components")
         ->required()
         ->check(CLI::ExistingFile);
-    app.add_option("-c,--config", configFilename, "Path to configuration file for graph components stage of Africapolis workflow")
-        ->check(CLI::ExistingFile); // currently not required / used
+    app.add_option("--max-components-per-workload", maxComponentsPerWorkload, "Maximum number of graph components assigned to a single clustering task")
+        ->check(CLI::PositiveNumber)
+        ->capture_default_str();
     CLI11_PARSE(app, argc, argv);
     if(debug){
         spdlog::set_level(spdlog::level::debug);
@@ -222,7 +213,7 @@ int main(int argc, char * argv[]){
         binGraphPaths.push_back(std::filesystem::path(std::move(fileStr)));
     }
     GraphComponents task(
-        GraphComponentsConfig(nlohmann::json::parse(std::ifstream(configFilename))),
+        maxComponentsPerWorkload,
         std::move(binGraphPaths)
     );
     task.run();

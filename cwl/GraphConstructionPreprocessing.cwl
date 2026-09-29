@@ -3,7 +3,7 @@ class: ExpressionTool
 requirements:
   - class: SchemaDefRequirement
     types: 
-    - $import: ../types/GraphConstructionWorkload.yaml
+    - $import: GraphConstructionWorkload.yaml
 inputs:
     vectorFiles: 
         type: File[]
@@ -11,7 +11,7 @@ inputs:
     filenamePrefix: string?
 outputs: 
     graph_construction_workload:
-      type: ../types/GraphConstructionWorkload.yaml#GraphConstructionWorkload[]
+      type: GraphConstructionWorkload.yaml#GraphConstructionWorkload[]
 expression: | 
     ${
     class Coordinate{

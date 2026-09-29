@@ -9,15 +9,21 @@ requirements:
     coresMin: 1
     ramMin: 4096
 inputs:
-  config:
-    type: File
-    doc: "Path to configuration file for africapolis components step. Contains database credentials and parallelization target"
-    inputBinding:
-      prefix: -c
   graphBinaries:
     type: File[]
     inputBinding:
       prefix: -g
+  maxComponentsPerWorkload:
+    type: int?
+    inputBinding:
+      prefix: --max-components-per-workload
+    doc: "Maximum number of graph components assigned to a single clustering task. Defaults to 5000 when omitted"
+  debug:
+    type: boolean
+    default: false
+    inputBinding:
+      prefix: --debug
+    doc: "Enable debug logging"
 outputs:
   clusterWorkloadFiles:
     type: File[]

@@ -3,7 +3,7 @@ class: Workflow
 requirements:
   - class: SchemaDefRequirement
     types: 
-      - $import: ../types/GraphConstructionWorkload.yaml
+      - $import: GraphConstructionWorkload.yaml
   - class: StepInputExpressionRequirement
   - class: ScatterFeatureRequirement
   - class: InlineJavascriptRequirement
@@ -15,9 +15,21 @@ inputs:
   filenamePrefix:
     type: string?
     doc: "Prefix used to identify the vector files. The prefix is used to extract the grid coordinates from the filenames."
-  config:
-    type: File
-    # format: JSON
+  mode:
+    type:
+      type: enum
+      symbols: [BUFFER_SWEEP, DELAUNAY]
+    doc: "Method used to connect neighbouring settlements"
+  distanceThreshold:
+    type: float
+    doc: "Maximum distance in meters between two settlements sharing an edge"
+  maxNeighborsPerNode:
+    type: int?
+    doc: "Maximum number of edges per settlement. Required by the BUFFER_SWEEP mode"
+  debug:
+    type: boolean
+    default: false
+    doc: "Enable debug logging"
 outputs: 
   graphBinaries:
     type: File[]
@@ -25,13 +37,13 @@ outputs:
     outputSource: generate_graph/graphBinary
 steps:
   prepare_workload:
-    run: PrepareGraphConstruction.cwl
+    run: GraphConstructionPreprocessing.cwl
     in:
       vectorFiles: vectorFiles
       filenamePrefix: filenamePrefix
     out: [graph_construction_workload]
   generate_graph:
-    run: GraphGenerationTool.cwl
+    run: GraphConstructionTool.cwl
     in:
       graph_construction_workload: prepare_workload/graph_construction_workload
       primaryInput: 
@@ -40,7 +52,10 @@ steps:
       additionalInput:
         source: prepare_workload/graph_construction_workload
         valueFrom: $(inputs.graph_construction_workload.additionalInput)
-      config: config
+      mode: mode
+      distanceThreshold: distanceThreshold
+      maxNeighborsPerNode: maxNeighborsPerNode
+      debug: debug
     scatter: graph_construction_workload
     scatterMethod: dotproduct
     out: [graphBinary]

@@ -4,6 +4,8 @@ build/
 build-release/
 cmake-build-debug/
 cwl/
+Africapolis.cwl
+jobs/
 tmp/
 doc/
 data/ 
