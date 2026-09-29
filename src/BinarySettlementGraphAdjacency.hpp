@@ -1,4 +1,5 @@
 # pragma once
+#include <fishnet/ObjectConcepts.hpp>
 #include <fishnet/Fishnet.hpp>
 #include <fishnet/SettlementShape.hpp>
 #include <fishnet/BinaryAdjacency.hpp>
@@ -11,7 +12,7 @@ struct HashingFileReferenceMapper {
 };
 
 template<typename S>
-concept ISettlement = requires(S s){
+concept ISettlement = fishnet::util::Mapable<S> && requires(S s){
     {s.key()} -> std::convertible_to<size_t>;
     {s.file()} -> std::convertible_to<FileReference>;
 };
@@ -33,17 +34,11 @@ struct ProxySettlement {
     bool operator==(const ProxySettlement & other) const noexcept {
         return id == other.id;
     }
+
+    size_t hash() const noexcept {
+        return id;
+    }
 };
-
-namespace std {
-    template<>
-    struct hash<ProxySettlement> {
-        size_t operator()(const ProxySettlement & settlement) const noexcept {
-            return settlement.key();
-        }
-    };
-}
-
 static_assert(ISettlement<ProxySettlement>);
 
 template<typename F, typename T>
