@@ -1,10 +1,23 @@
 name: CI
 
+# Only changes to the binaries, the image or the workflow exercised by jobs/default.yml are tested.
+# Documentation, other job presets and the HPC scripts do not trigger a run.
 on:
   push:
     branches: [main]
+    paths: &tested-paths
+      - "src/**"
+      - "lib/**"
+      - "CMakeLists.txt"
+      - "Dockerfile"
+      - ".dockerignore"
+      - "Africapolis.cwl"
+      - "cwl/**"
+      - "jobs/default.yml"
+      - ".github/workflows/ci.yml"
   pull_request:
     branches: [main]
+    paths: *tested-paths
   workflow_dispatch:
 
 concurrency:
